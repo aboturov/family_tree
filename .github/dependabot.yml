@@ -1,0 +1,8 @@
+# Раз в месяц — PR с новыми версиями actions (они закреплены по SHA в workflows).
+# npm-зависимости обновляются только при уязвимостях — это security updates в настройках репозитория.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
