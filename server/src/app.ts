@@ -21,7 +21,16 @@ import {
   updatePerson,
 } from './editing.ts';
 import { addMedia, deleteMedia, mediaPath, parseCrop, setAvatar, trashMediaFiles, updateCaption } from './media.ts';
-import { addRelative, deletePerson, mergeDuplicate, parseNewRelative, removeChild, removePartner } from './relations.ts';
+import {
+  addFirstPerson,
+  addRelative,
+  deletePerson,
+  mergeDuplicate,
+  parseNewPerson,
+  parseNewRelative,
+  removeChild,
+  removePartner,
+} from './relations.ts';
 import { listChanges, undoChange } from './history.ts';
 import { parseLayoutParams, type LayoutService } from './layouts.ts';
 import { parseOpenedView, type ViewStats } from './viewStats.ts';
@@ -219,6 +228,15 @@ export function createApp({ db, mediaDir, secureCookies, sessionTtlDays, layouts
     if (!row) throw new EditError(404, 'Фото не найдено');
     return row.person_id;
   };
+
+  // Первый человек пустого дерева; дальше — только родственниками (relations.ts).
+  api.post('/persons', editor, async (c) => {
+    const input = parseNewPerson(await readJson<Body>(c.req.raw), parsePersonFields);
+    const id = change(c, 'person.add', null, () => addFirstPerson(db, c.get('user')!.id, input), (created) => ({
+      person: who(created),
+    }));
+    return c.json({ id }, 201);
+  });
 
   api.patch('/persons/:id', editor, async (c) => {
     const body = await readJson<Body>(c.req.raw);
