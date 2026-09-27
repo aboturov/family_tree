@@ -1,0 +1,38 @@
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+*.log
+
+# Реальные данные дерева не попадают в git ни под каким именем и ни в каком каталоге:
+# база и её бэкапы, кэш раскладок, выгрузки GEDCOM, фото и скриншоты.
+data/
+backups/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.[gG][eE][dD]
+*.[gG][eE][dD][cC][oO][mM]
+# Исключение — вымышленная семья для демо.
+!examples/demo.ged
+*.zip
+*.[jJ][pP][gG]
+*.[jJ][pP][eE][gG]
+*.[hH][eE][iI][cC]
+*.[wW][eE][bB][pP]
+*.[pP][nN][gG]
+!web/public/*.png
+
+# Секреты и личный список слов для хуков (он живёт в ~/.config/family-tree).
+.env
+.env.*
+denylist
+
+# Локальное: заметки по интерфейсу familio, редакторы, состояние Claude Code.
+docs/familio-reference.md
+.claude/
+.idea/
+.vscode/
+.DS_Store

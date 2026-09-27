@@ -1,0 +1,14 @@
+# Лежит на сервере в /opt/family-tree; при изменении скопировать вручную (см. deploy/README.md).
+# TREE_IMAGE задаётся в .env при настройке, TREE_TAG переписывает deploy.sh.
+services:
+  app:
+    image: ${TREE_IMAGE:?}:${TREE_TAG:?}
+    # Образ приезжает через deploy.sh (docker load), в ghcr сервер не ходит.
+    pull_policy: never
+    restart: unless-stopped
+    ports:
+      # Только loopback: наружу приложение отдаёт nginx на хосте.
+      - "127.0.0.1:8091:3000"
+    volumes:
+      # База, бэкапы и (позже) медиа. Каталог должен принадлежать uid 1000 (пользователь node в образе).
+      - ./data:/data

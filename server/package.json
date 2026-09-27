@@ -1,0 +1,23 @@
+{
+  "name": "@family-tree/server",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch --disable-warning=ExperimentalWarning src/index.ts",
+    "start": "node --disable-warning=ExperimentalWarning src/index.ts",
+    "admin": "node --disable-warning=ExperimentalWarning src/cli.ts",
+    "demo": "node --disable-warning=ExperimentalWarning src/demo.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.1",
+    "elkjs": "^0.12.0",
+    "hono": "^4.13.9"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.6",
+    "typescript": "^7.0.2"
+  }
+}

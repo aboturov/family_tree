@@ -1,0 +1,2 @@
+#!/bin/sh
+exec node --disable-warning=ExperimentalWarning /app/server/src/cli.ts "$@"

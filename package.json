@@ -1,0 +1,16 @@
+{
+  "name": "family-tree",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "workspaces": ["server", "web"],
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "dev:server": "npm run dev -w server",
+    "dev:web": "npm run dev -w web",
+    "build": "npm run build -w web",
+    "demo": "npm run build && npm run demo -w server --",
+    "typecheck": "npm run typecheck --workspaces",
+    "test": "npm test --workspaces"
+  }
+}

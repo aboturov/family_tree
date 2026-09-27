@@ -1,0 +1,2192 @@
+/* Визуальный язык familio.org: PT Serif,
+   светлые страницы, синий акцент, круглые аватары, зелёные/розовые бейджи родства. */
+
+:root {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --tree-bg: #f5f5f7;
+  /* Каждое второе поколение на схеме. */
+  --zebra: #ebebf0;
+  --text: #11181c;
+  --muted: #676565;
+  --border: #e6e6ea;
+  --accent: #1a56f1;
+  --accent-soft: #eef2fe;
+  --accent-text: #ffffff;
+  --error: #d6334f;
+
+  --line: #c8d5f6;
+  /* Линии к детям: у соседних браков разные оттенки (lines.ts). Порядок проверен на различимость
+     соседних, в том числе при нарушениях цветового зрения; последний соседствует с первым. */
+  --family-1: #2a78d6;
+  --family-2: #eb6834;
+  --family-3: #1baf7a;
+  --family-4: #4a3aa7;
+  --family-5: #e87ba4;
+  --family-6: #008300;
+  /* Брак без детей во «Всём дереве»: нейтральный, но не бледнее цветных линий. */
+  --family-none: #7f8aa3;
+  --avatar-bg: #ffffff;
+  --avatar-border: #c8d5f6;
+  --silhouette: #c9d3f5;
+  --silhouette-muted: #d9dbe3;
+  --silhouette-hair: #a9b8ee;
+  --silhouette-hair-muted: #c4c7d2;
+  --ring: #769af7;
+  --badge-male: #32c000;
+  --badge-female: #ff3365;
+  --badge-center: #769af7;
+  --badge-far: #ebebeb;
+  --badge-far-text: #676565;
+  --unknown-bg: #ececec;
+  --plate: #f6f6f6;
+  --field-border: #dbe3f6;
+  --caption: #909090;
+
+  color-scheme: light;
+  font-family: 'PT Serif', Georgia, serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* Тёмная тема: по системе, если не выбрана светлая, или выбранная вручную (src/theme.ts). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17181b;
+    --surface: #1f2024;
+    --tree-bg: #17181b;
+    --zebra: #1f2024;
+    --text: #ececef;
+    --muted: #a3a3ab;
+    --border: #33343a;
+    --accent: #8aa8ff;
+    --accent-soft: #262c40;
+    --accent-text: #10131c;
+    --error: #ff7a90;
+
+    --line: #3c4a70;
+    --family-1: #3987e5;
+    --family-2: #d95926;
+    --family-3: #199e70;
+    --family-4: #9085e9;
+    --family-5: #d55181;
+    --family-6: #008300;
+    --family-none: #7a86a3;
+    --avatar-bg: #24262d;
+    --avatar-border: #3c4a70;
+    --silhouette: #4d5a86;
+    --silhouette-muted: #3a3d47;
+    --silhouette-hair: #3a4570;
+    --silhouette-hair-muted: #30323a;
+    --ring: #8aa8ff;
+    --badge-male: #2e9a0a;
+    --badge-female: #d83a60;
+    --badge-center: #5f82e6;
+    --badge-far: #33343a;
+    --badge-far-text: #b5b5bd;
+    --unknown-bg: #2a2b31;
+    --plate: #26272c;
+    --field-border: #3a3d47;
+    --caption: #8b8b93;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #17181b;
+  --surface: #1f2024;
+  --tree-bg: #17181b;
+  --zebra: #1f2024;
+  --text: #ececef;
+  --muted: #a3a3ab;
+  --border: #33343a;
+  --accent: #8aa8ff;
+  --accent-soft: #262c40;
+  --accent-text: #10131c;
+  --error: #ff7a90;
+
+  --line: #3c4a70;
+  --family-1: #3987e5;
+  --family-2: #d95926;
+  --family-3: #199e70;
+  --family-4: #9085e9;
+  --family-5: #d55181;
+  --family-6: #008300;
+  --family-none: #7a86a3;
+  --avatar-bg: #24262d;
+  --avatar-border: #3c4a70;
+  --silhouette: #4d5a86;
+  --silhouette-muted: #3a3d47;
+  --silhouette-hair: #3a4570;
+  --silhouette-hair-muted: #30323a;
+  --ring: #8aa8ff;
+  --badge-male: #2e9a0a;
+  --badge-female: #d83a60;
+  --badge-center: #5f82e6;
+  --badge-far: #33343a;
+  --badge-far-text: #b5b5bd;
+  --unknown-bg: #2a2b31;
+  --plate: #26272c;
+  --field-border: #3a3d47;
+  --caption: #8b8b93;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  line-height: 1.5;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 0.85rem;
+}
+
+.link {
+  padding: 0;
+  color: var(--accent);
+  background: none;
+  border: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 18px;
+  font-size: 0.95rem;
+  color: var(--accent-text);
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.button:hover {
+  text-decoration: none;
+  filter: brightness(1.05);
+}
+
+.button.secondary {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.button.ghost {
+  min-width: 40px;
+  padding: 0 10px;
+  font-size: 1.3rem;
+  color: var(--muted);
+  background: transparent;
+}
+
+.placeholder {
+  display: grid;
+  place-items: center;
+  min-height: 50vh;
+  margin: 0;
+  color: var(--muted);
+}
+
+/* --- Вход --- */
+
+.auth {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--tree-bg);
+}
+
+.card {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 32px 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+
+.card h1 {
+  margin: 0 0 4px;
+  font-size: 1.6rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+input,
+select {
+  font-size: 1rem;
+  color: var(--text);
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+input:focus,
+select:focus {
+  outline: 2px solid var(--ring);
+  outline-offset: -1px;
+}
+
+.card button {
+  margin-top: 6px;
+  min-height: 44px;
+  font-size: 1rem;
+  color: var(--accent-text);
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+}
+
+.card button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.error {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--error);
+}
+
+/* --- Каркас --- */
+
+.app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-fixed {
+  height: 100dvh;
+}
+
+.app-main {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.brand:hover {
+  text-decoration: none;
+}
+
+.nav {
+  display: flex;
+  gap: 18px;
+  flex: 1;
+}
+
+.nav a {
+  color: var(--text);
+  padding: 4px 0;
+  border-bottom: 2px solid transparent;
+}
+
+.nav a.active {
+  border-bottom-color: var(--accent);
+}
+
+.nav a:hover {
+  text-decoration: none;
+  color: var(--accent);
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* --- Дерево --- */
+
+.tree-page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+.tree-main {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.tree-canvas {
+  position: absolute;
+  inset: 0;
+  background: var(--tree-bg);
+}
+
+/* Пока считается новая раскладка, старая схема приглушена, сверху — плашка с прогрессом. */
+.tree-canvas.busy .tree {
+  opacity: 0.45;
+  transition: opacity 0.2s;
+}
+
+.layout-progress {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 220px;
+  padding: 16px 24px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgb(0 0 0 / 12%);
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.layout-progress-bar {
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  background: var(--accent-soft);
+  border-radius: 2px;
+}
+
+.layout-progress-bar > span {
+  display: block;
+  width: 35%;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  animation: layout-progress 1.4s ease-in-out infinite;
+}
+
+/* Сколько осталось, сервер не сообщает — полоса просто бежит. */
+@keyframes layout-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(290%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layout-progress-bar > span {
+    width: 100%;
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+.tree {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.tree:active {
+  cursor: grabbing;
+}
+
+.tree .loading {
+  fill: var(--muted);
+}
+
+.tree-toolbar {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  left: 16px;
+  right: 72px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 12px;
+  pointer-events: none;
+}
+
+.toolbar-row {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-button {
+  width: 42px;
+  height: 42px;
+  font-size: 1.15rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.icon-button.active,
+.icon-button:hover {
+  color: var(--accent);
+  border-color: var(--ring);
+}
+
+.tree-settings {
+  flex-basis: 100%;
+  width: 100%;
+  min-width: 0;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 10%);
+}
+
+.tree-settings select {
+  width: 100%;
+  min-width: 0;
+  font-size: 0.95rem;
+}
+
+.tree-settings p {
+  margin: 0;
+}
+
+.legend {
+  max-height: min(60vh, 520px);
+  overflow-y: auto;
+}
+
+.legend dl {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.legend dt {
+  font-weight: 700;
+}
+
+.legend dd {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.tree-toolbar > * {
+  pointer-events: auto;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.segmented button {
+  padding: 6px 14px;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: none;
+  border: none;
+  border-radius: 9px;
+}
+
+.segmented button.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.segmented.small button {
+  padding: 4px 12px;
+  font-size: 0.9rem;
+}
+
+.tree-summary {
+  align-self: center;
+  margin: 0;
+  padding: 5px 12px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.tree-summary a,
+.tree-summary .link {
+  font-size: inherit;
+}
+
+.tree-controls {
+  position: absolute;
+  z-index: 2;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tree-controls button {
+  width: 44px;
+  height: 44px;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--text);
+  background: var(--surface);
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 12%);
+}
+
+.tree-controls button:hover {
+  color: var(--accent);
+}
+
+.edge,
+.marriage {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1.25;
+}
+
+.marriage.divorced {
+  stroke-dasharray: 6 5;
+}
+
+/* Во «Всём дереве» семья одним цветом: линия между супругами и линии к детям (lines.ts). */
+.lines.hued .marriage {
+  stroke: var(--family-none);
+}
+
+.lines .edge.hue-0,
+.lines .marriage.hue-0 {
+  stroke: var(--family-1);
+}
+
+.lines .edge.hue-1,
+.lines .marriage.hue-1 {
+  stroke: var(--family-2);
+}
+
+.lines .edge.hue-2,
+.lines .marriage.hue-2 {
+  stroke: var(--family-3);
+}
+
+.lines .edge.hue-3,
+.lines .marriage.hue-3 {
+  stroke: var(--family-4);
+}
+
+.lines .edge.hue-4,
+.lines .marriage.hue-4 {
+  stroke: var(--family-5);
+}
+
+.lines .edge.hue-5,
+.lines .marriage.hue-5 {
+  stroke: var(--family-6);
+}
+
+/* Выбран человек («Всё дерево», «По родам»): его род — предки и потомки — толще и ярче, остальное
+   приглушено: линии сильно, карточки слабее, чтобы имена читались. */
+.lines .edge,
+.lines .marriage,
+.tnode,
+.tref,
+.portal {
+  transition: opacity 0.2s;
+}
+
+.focused .edge:not(.related),
+.focused .marriage:not(.related) {
+  opacity: 0.2;
+}
+
+.focused .tnode:not(.related),
+.focused .tref:not(.related),
+.focused .portal:not(.related) {
+  opacity: 0.4;
+}
+
+.edge.related,
+.marriage.related {
+  stroke-width: 2.75;
+}
+
+/* Без оттенков («По родам») линии рода — цвета обводки выбранной карточки, иначе бледные. */
+.lines:not(.hued) .related {
+  stroke: var(--ring);
+}
+
+/* Мостики рода между родами в «По родам». */
+.tref.related rect,
+.portal.related rect {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+/* Зебра поколений и подписи к ним у левого края. */
+.generation-band {
+  fill: transparent;
+}
+
+.generation-band.odd {
+  fill: var(--zebra);
+}
+
+.generation-labels {
+  pointer-events: none;
+}
+
+.generation-label rect {
+  fill: var(--surface);
+  stroke: var(--border);
+  opacity: 0.92;
+}
+
+.generation-label text {
+  fill: var(--muted);
+  font-size: 12px;
+}
+
+.generation-label.own text {
+  fill: var(--text);
+}
+
+.generation-label.vertical text {
+  font-size: 11px;
+}
+
+/* «По родам»: подпись рода над его верхней парой. */
+.clan-label {
+  fill: var(--muted);
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+
+/* «По родам»: ссылка на ребёнка, которого рисуют в роду супруга, и пометка «↑ родители». */
+.tref,
+.portal {
+  cursor: pointer;
+}
+
+.tref:focus,
+.portal:focus {
+  outline: none;
+}
+
+.tref rect {
+  fill: var(--surface);
+  stroke: var(--line);
+  stroke-width: 1.25;
+  stroke-dasharray: 5 4;
+}
+
+.tref:hover rect,
+.tref:focus-visible rect {
+  stroke: var(--ring);
+}
+
+.tref.flash rect {
+  animation: ref-flash 1.8s ease-out;
+}
+
+@keyframes ref-flash {
+  0%,
+  45% {
+    fill: var(--accent-soft);
+    stroke: var(--accent);
+    stroke-width: 3;
+    stroke-dasharray: none;
+  }
+}
+
+/* Куда привела ссылка — карточка на миг обводится. */
+.tnode.flash .avatar-ring {
+  animation: card-flash 1.8s ease-out;
+}
+
+@keyframes card-flash {
+  0%,
+  45% {
+    stroke: var(--accent);
+    stroke-width: 6;
+  }
+}
+
+.tref .name {
+  fill: var(--text);
+  font-size: 12.5px;
+}
+
+.tref .meta {
+  fill: var(--muted);
+  font-size: 12px;
+}
+
+.portal rect {
+  fill: var(--surface);
+  stroke: var(--line);
+}
+
+.portal text {
+  fill: var(--accent);
+  font-size: 11.5px;
+}
+
+.portal:hover rect,
+.portal:focus-visible rect {
+  stroke: var(--ring);
+}
+
+.tnode {
+  cursor: pointer;
+}
+
+.tnode:focus {
+  outline: none;
+}
+
+.tnode .hit {
+  fill: transparent;
+}
+
+.avatar-bg {
+  fill: var(--avatar-bg);
+  stroke: var(--avatar-border);
+  stroke-width: 1;
+}
+
+.silhouette {
+  fill: var(--silhouette);
+}
+
+.tnode.deceased .silhouette {
+  fill: var(--silhouette-muted);
+}
+
+.silhouette .hair {
+  fill: var(--silhouette-hair);
+}
+
+.tnode.deceased .silhouette .hair {
+  fill: var(--silhouette-hair-muted);
+}
+
+.avatar-ring {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 3;
+}
+
+.tnode:hover .avatar-ring,
+.tnode:focus-visible .avatar-ring,
+.tnode.ringed .avatar-ring {
+  stroke: var(--ring);
+}
+
+.tnode.selected .avatar-ring {
+  stroke: var(--accent);
+  stroke-width: 4;
+}
+
+.tnode .name {
+  fill: var(--text);
+  font-size: 12.5px;
+}
+
+.tnode .meta {
+  fill: var(--muted);
+  font-size: 12px;
+}
+
+.tnode .uncertain {
+  fill: var(--error);
+}
+
+.tnode.unknown {
+  cursor: default;
+}
+
+.tnode.unknown .avatar-bg {
+  fill: var(--unknown-bg);
+  stroke: none;
+}
+
+.unknown-mark {
+  fill: var(--muted);
+  font-size: 30px;
+}
+
+.badge rect {
+  fill: var(--badge-male);
+}
+
+.badge text {
+  fill: #ffffff;
+  font-size: 12px;
+}
+
+.badge.tone-female rect {
+  fill: var(--badge-female);
+}
+
+.badge.tone-center rect {
+  fill: var(--badge-center);
+}
+
+.badge.tone-far rect {
+  fill: var(--badge-far);
+}
+
+.badge.tone-far text {
+  fill: var(--badge-far-text);
+}
+
+.panel-resizer {
+  flex-shrink: 0;
+  width: 6px;
+  margin-right: -6px;
+  z-index: 2;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.panel-resizer:hover,
+.panel-resizer:active {
+  background: var(--ring);
+  opacity: 0.5;
+}
+
+/* Свёрнутая карточка человека — в углу поверх дерева, дерево не сужается. */
+.mini-card {
+  position: absolute;
+  z-index: 3;
+  right: 16px;
+  bottom: 16px;
+  width: min(360px, calc(100% - 32px));
+  padding: 12px 12px 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgb(0 0 0 / 12%);
+}
+
+.mini-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.mini-card-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.mini-card-main .avatar {
+  flex-shrink: 0;
+}
+
+.mini-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mini-card-name {
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.mini-card .pill {
+  width: 100%;
+  height: 30px;
+  margin-top: 10px;
+}
+
+.side-panel {
+  width: var(--panel-width, 420px);
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding: 24px 32px 40px;
+  background: var(--surface);
+  box-shadow: 0 1px 30px rgb(0 0 0 / 10%);
+}
+
+.edit-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 12px 0;
+  padding: 16px;
+  text-align: left;
+  background: var(--tree-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.edit-form input,
+.edit-form select,
+.edit-form textarea {
+  width: 100%;
+  min-width: 0;
+  font-size: 0.95rem;
+  background: var(--surface);
+}
+
+.edit-form textarea {
+  font: inherit;
+  padding: 10px 12px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  resize: vertical;
+}
+
+.edit-form fieldset {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.edit-form legend {
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.date-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.edit-form .date-row > select:first-child {
+  width: auto;
+  flex: 0 0 auto;
+}
+
+.edit-form .date-row > select:not(:first-child) {
+  flex: 1;
+}
+
+.edit-form .date-day {
+  width: 64px;
+  flex-shrink: 0;
+}
+
+.edit-form .date-year {
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+label.choice {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+.edit-form label.choice input {
+  width: auto;
+}
+
+.form-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.button.danger {
+  margin-left: auto;
+  color: var(--error);
+  background: transparent;
+  border: 1px solid currentColor;
+}
+
+/* --- Карточка человека по образцу familio --- */
+
+.modal-head strong {
+  font-size: 22px;
+  line-height: 28px;
+}
+
+.modal-caption {
+  color: var(--caption);
+}
+
+.event-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Поле с подписью внутри рамки. */
+.ffield {
+  position: relative;
+  display: block;
+}
+
+.ffield > span {
+  position: absolute;
+  top: 5px;
+  left: 14px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.ffield input,
+.ffield select,
+.date-parts input,
+.date-parts select,
+.ffield-area {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--field-border);
+  border-radius: 3px;
+}
+
+.ffield input,
+.ffield select {
+  height: 48px;
+  padding: 20px 14px 4px;
+}
+
+.date-parts {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.date-parts input,
+.date-parts select {
+  height: 48px;
+  padding: 0 14px;
+}
+
+.date-parts input:disabled {
+  opacity: 0.5;
+}
+
+.ffield-area {
+  padding: 10px 14px;
+  resize: vertical;
+}
+
+.small-link {
+  align-self: flex-start;
+  font-size: 14px;
+}
+
+.dialog-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.dialog-buttons .button {
+  flex: 1;
+  height: 48px;
+  font-size: 18px;
+  border-radius: 4px;
+}
+
+.square-button {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dialog-buttons .square-button {
+  width: 50px;
+  height: 48px;
+}
+
+/* Страница: аватар слева, всё остальное справа; на узком экране — по центру. */
+.card-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  text-align: center;
+}
+
+.card-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-title h1 {
+  margin: 0 0 6px;
+  font-size: clamp(1.6rem, 4vw, 2.25rem);
+  line-height: 1.2;
+}
+
+.card-head .edit-links {
+  margin-top: 8px;
+}
+
+.card-columns {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px 32px;
+  margin-top: 20px;
+  text-align: left;
+}
+
+.card-column h3 {
+  margin: 12px 0 4px;
+  font-size: 1rem;
+}
+
+.card-column li {
+  margin-bottom: 8px;
+}
+
+.quick-adds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 4px 0 0;
+}
+
+@media (min-width: 900px) {
+  .card-head {
+    flex-direction: row;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .card-title {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .card-title .person-actions {
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  .card-head .edit-links {
+    justify-content: flex-start;
+  }
+
+  .card-columns {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Лента событий: карточками, а на широком месте — таблицей. */
+.events {
+  container-type: inline-size;
+}
+
+.add-wide {
+  width: 100%;
+  height: 36px;
+  margin: 8px 0;
+  font: inherit;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.events-head {
+  display: none;
+}
+
+.event-row {
+  position: relative;
+  padding: 12px 88px 12px 0;
+  border-bottom: 1px solid var(--field-border);
+}
+
+.ev-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.ev-label {
+  display: block;
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--caption);
+}
+
+.ev-actions {
+  position: absolute;
+  top: 12px;
+  right: 0;
+  display: flex;
+  gap: 8px;
+}
+
+@container (min-width: 760px) {
+  .events-head,
+  .event-row {
+    display: grid;
+    /* Участникам — больше всех: «Отец: Иванов Михаил Александрович» должен влезать в строку. */
+    grid-template-columns: 170px 100px minmax(0, 2fr) minmax(0, 1.3fr) minmax(0, 1fr) 80px;
+    column-gap: 16px;
+  }
+
+  .events-head {
+    padding: 8px 0;
+    font-size: 14px;
+    color: var(--caption);
+    background: var(--plate);
+  }
+
+  .event-row {
+    padding: 12px 0;
+  }
+
+  .ev-head {
+    display: contents;
+  }
+
+  .ev-label {
+    display: none;
+  }
+
+  .ev-actions {
+    position: static;
+    justify-content: flex-end;
+  }
+}
+
+/* «Добавить» с меню подходящих родственников. */
+.add-menu {
+  position: relative;
+}
+
+.add-menu-list {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 180px;
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+  background: var(--surface);
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgb(0 0 0 / 15%);
+}
+
+.add-menu-list button {
+  width: 100%;
+  padding: 8px 16px;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.add-menu-list button:hover {
+  background: var(--plate);
+}
+
+.section-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Боковая панель дерева — секции вместо вкладок. */
+.panel-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.panel-icons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plain-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--text);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.icon-narrow {
+  display: none;
+}
+
+.plain-icon.close {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.panel-name {
+  margin: 16px 0 4px;
+  font-size: 26px;
+  line-height: 36px;
+}
+
+.panel-kinship,
+.panel-summary {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+}
+
+.pills {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 20px;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: none;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 17px;
+  cursor: pointer;
+}
+
+.pill.grey {
+  color: var(--muted);
+  border-color: var(--muted);
+}
+
+.panel-section {
+  margin-top: 32px;
+}
+
+.panel-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panel-section-head h3 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  line-height: 28px;
+}
+
+.section-links {
+  display: flex;
+  gap: 16px;
+}
+
+.plate {
+  position: relative;
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--plate);
+  border-radius: 16px;
+}
+
+.plate-label {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--muted);
+}
+
+.plate-unlink {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.accordion-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.accordion-head .chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+
+.accordion.open .chevron {
+  transform: rotate(180deg);
+}
+
+.accordion-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.accordion-footer {
+  display: flex;
+  gap: 16px;
+}
+
+.more {
+  display: block;
+  margin-top: 8px;
+}
+
+/* --- История --- */
+
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 16px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.history li.undone .history-text {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.edit-links {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 0;
+}
+
+.button.small {
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+
+.unlink {
+  margin-left: 6px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--error);
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.danger-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.link.danger-link {
+  color: var(--error);
+}
+
+.relative-form .segmented {
+  align-self: flex-start;
+}
+
+.person-picker .picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.person-picker .picked {
+  margin: 8px 0 0;
+}
+
+/* --- Фото --- */
+
+.photos-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.photo-grid li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.photo-grid li > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photo-thumb {
+  position: relative;
+  aspect-ratio: 1;
+  padding: 0;
+  overflow: hidden;
+  cursor: zoom-in;
+  background: var(--tree-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.photo-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-flag {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 1px 8px;
+  font-size: 0.75rem;
+  color: var(--accent-text);
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 0.55);
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(420px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 24px 32px 32px;
+  background: var(--surface);
+  border-radius: 32px;
+}
+
+.modal.wide {
+  width: min(1000px, 100%);
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.modal-head strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photo-stage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  background: var(--tree-bg);
+  border-radius: 10px;
+}
+
+.photo-stage img {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+}
+
+.photo-nav {
+  position: absolute;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  font-size: 1.8rem;
+  line-height: 1;
+  color: #fff;
+  background: rgb(0 0 0 / 0.4);
+  border: 0;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.photo-nav.prev {
+  left: 8px;
+}
+
+.photo-nav.next {
+  right: 8px;
+}
+
+.photo-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.photo-edit input {
+  width: 100%;
+  font-size: 0.95rem;
+}
+
+.cropper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.cropper label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.cropper-stage {
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  background: var(--tree-bg);
+  border-radius: 10px;
+}
+
+.cropper-stage:active {
+  cursor: grabbing;
+}
+
+.cropper-stage img {
+  position: absolute;
+  max-width: none;
+  pointer-events: none;
+}
+
+/* Затемняем всё, кроме круга аватарки. */
+.cropper-mask {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle closest-side, transparent 99%, rgb(0 0 0 / 0.5) 100%);
+}
+
+.cropper .form-buttons {
+  align-self: stretch;
+}
+
+/* --- Страницы --- */
+
+.page {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+/* Страница человека шире, как у familio: таблице событий нужно место под участников. */
+.page.person-page {
+  max-width: 1200px;
+}
+
+.page h1 {
+  font-size: 2rem;
+  margin: 8px 0 16px;
+}
+
+.person-summary {
+  margin: 0;
+}
+
+.badge-line {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--error);
+}
+
+.person-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.person-columns h3,
+.relatives h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.plain {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plain li {
+  margin-bottom: 8px;
+}
+
+/* Вкладки переносятся на вторую строку, а не уезжают вбок: в узкой панели иначе обрезается последняя. */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 18px;
+  margin: 28px 0 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs button {
+  padding: 8px 0;
+  font-size: 1rem;
+  color: var(--text);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+
+.tabs button.active {
+  font-weight: 700;
+  border-bottom-color: var(--accent);
+}
+
+.field-label {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.relatives section {
+  margin-top: 20px;
+}
+
+.relative {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.relative .field-label {
+  margin-top: 0;
+}
+
+.relative dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 16px;
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+}
+
+.relative dt {
+  color: var(--muted);
+}
+
+.relative dd {
+  margin: 0;
+}
+
+.bio {
+  white-space: pre-wrap;
+}
+
+.people-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.people-filters input {
+  flex: 1;
+  min-width: 220px;
+}
+
+.people-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 24px 16px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.person-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  color: var(--text);
+}
+
+.person-tile:hover {
+  text-decoration: none;
+}
+
+.person-tile:hover .tile-name {
+  color: var(--accent);
+}
+
+/* Узкий телефон: название сайта не помещается рядом с меню и «Выйти» — «Древо» и так ведёт домой. */
+@media (max-width: 480px) {
+  .brand {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .topbar {
+    gap: 14px;
+    padding: 10px 16px;
+  }
+
+  .brand {
+    font-size: 1.1rem;
+  }
+
+  /* Страница человека: аватар и заголовок скромнее, ссылки правки не рвутся посреди слов. */
+  .card-head {
+    gap: 16px;
+  }
+
+  .card-head > .avatar {
+    width: 112px;
+    height: 112px;
+  }
+
+  .edit-links {
+    flex-wrap: wrap;
+    gap: 6px 18px;
+  }
+
+  .edit-links > * {
+    white-space: nowrap;
+  }
+
+  .icon-wide {
+    display: none;
+  }
+
+  .icon-narrow {
+    display: block;
+  }
+
+  .who-login {
+    display: none;
+  }
+
+  /* Панель инструментов: режимы — одной строкой во всю ширину, под ними сводка, настройки и
+     легенда. Две низкие строки вместо трёх высоких. */
+  .tree-toolbar {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    gap: 6px;
+  }
+
+  .toolbar-row {
+    display: contents;
+  }
+
+  .toolbar-row > * {
+    pointer-events: auto;
+  }
+
+  .tree-toolbar .segmented {
+    order: 0;
+    flex: 1 0 100%;
+    display: flex;
+  }
+
+  .tree-toolbar .segmented button {
+    flex: 1 1 auto;
+    padding: 6px 4px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  .tree-summary {
+    order: 1;
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tree-toolbar .icon-button {
+    order: 2;
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+  }
+
+  .tree-settings {
+    order: 3;
+  }
+
+  /* Масштаб — щипком; остаются «к центру» и «показать всё». */
+  .tree-controls {
+    top: auto;
+    bottom: 16px;
+    right: 12px;
+    transform: none;
+    gap: 8px;
+  }
+
+  .tree-controls .zoom-step {
+    display: none;
+  }
+
+  .tree-controls button {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Мини-карточка на телефоне — полоска внизу, кнопки масштаба над ней. */
+  .mini-card {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    border-width: 1px 0 0;
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -8px 24px rgb(0 0 0 / 12%);
+  }
+
+  .with-card .tree-controls {
+    bottom: 136px;
+  }
+
+  .mini-card .pill {
+    margin-top: 8px;
+  }
+
+  /* Развёрнутая шторка — компактнее: меньше аватар и заголовок, кнопки в строку. */
+  .side-panel {
+    padding: 16px 20px 32px;
+  }
+
+  .side-panel .panel-top .avatar {
+    width: 64px;
+    height: 64px;
+  }
+
+  .side-panel .panel-name {
+    margin-top: 10px;
+    font-size: 21px;
+    line-height: 28px;
+  }
+
+  .side-panel .pills {
+    flex-flow: row wrap;
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .side-panel .pills .pill {
+    flex: 1 1 auto;
+    height: 32px;
+    padding: 0 14px;
+  }
+
+  .panel-resizer {
+    display: none;
+  }
+
+  /* На телефоне карточка — шторка снизу, дерево остаётся видно сверху. */
+  .side-panel {
+    position: absolute;
+    z-index: 3;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 62%;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -8px 24px rgb(0 0 0 / 12%);
+  }
+}
