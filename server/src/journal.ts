@@ -6,6 +6,7 @@ import type { Db } from './db.ts';
 export type AuditEntity = 'person' | 'family' | 'event' | 'place' | 'media';
 
 export type ChangeAction =
+  | 'person.add'
   | 'person.update'
   | 'person.delete'
   | 'person.merge'

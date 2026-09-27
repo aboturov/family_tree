@@ -45,6 +45,12 @@ export function describe(action: string, d: Record<string, unknown>, index: Tree
   const person = d.person as PersonRef;
   const event = () => eventLabel({ type: d.type, customType: d.customType } as TreeEvent);
   switch (action) {
+    case 'person.add':
+      return (
+        <>
+          <Who person={person} index={index} />: {ending(person.sex, 'добавлен')} в дерево
+        </>
+      );
     case 'person.update':
       return (
         <>

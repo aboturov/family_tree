@@ -255,3 +255,38 @@ describe('отвязка, удаление и слияние', () => {
     await add(max, { relation: 'parent', person: newPerson('Сергей', 'M') }, 403);
   });
 });
+
+describe('первый человек', () => {
+  it('в пустое дерево — с датой рождения; правка в истории и откатывается', async () => {
+    const res = await call('POST', '/api/persons', {
+      person: { surname: 'Орлов', givenName: 'Максим', patronymic: 'Сергеевич', sex: 'M' },
+      birth: { modifier: 'exact', value: '1990-05-14' },
+    });
+    assert.equal(res.status, 201);
+    const { id } = (await res.json()) as { id: number };
+    const [created] = tree().persons;
+    assert.deepEqual([created.id, created.surname, created.givenName], [id, 'Орлов', 'Максим']);
+    assert.equal(created.events[0].date?.value, '1990-05-14');
+
+    const [item] = (await (await app.request('/api/history', { headers: { cookie } })).json()).items;
+    assert.equal(item.action, 'person.add');
+    assert.equal(item.details.person.name, 'Орлов Максим Сергеевич');
+    assert.equal((await call('POST', `/api/history/${item.id}/undo`)).status, 200);
+    assert.equal(tree().persons.length, 0);
+    assert.equal(db.prepare('SELECT count(*) AS n FROM events').get()!.n, 0);
+  });
+
+  it('только в пустое дерево: дальше — родственниками, чтобы дерево оставалось связным', async () => {
+    person('Максим', 'M');
+    const res = await call('POST', '/api/persons', { person: newPerson('Лиза', 'F') });
+    assert.equal(res.status, 409);
+    assert.match((await res.json()).error, /родственниками/);
+    assert.equal(tree().persons.length, 1);
+  });
+
+  it('без имени и фамилии — ошибка', async () => {
+    const res = await call('POST', '/api/persons', { person: { patronymic: 'Сергеевич', sex: 'M' } });
+    assert.equal(res.status, 400);
+    assert.equal(tree().persons.length, 0);
+  });
+});

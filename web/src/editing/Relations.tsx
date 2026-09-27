@@ -128,8 +128,6 @@ export function RelativeForm({
     e.preventDefault();
     const problem = mode === 'new' ? dateProblem(birth, 'Дата рождения') : null;
     if (problem) return setError(problem);
-    const birthValue = joinDate(birth);
-    const birthText = yearlessText(birth);
     const body: RelativeInput =
       mode === 'existing'
         ? { relation, existingId: existing, person: null, birth: null, familyId }
@@ -137,7 +135,7 @@ export function RelativeForm({
             relation,
             existingId: null,
             person: { surname, givenName, patronymic, birthSurname, sex },
-            birth: birthValue ? { modifier: 'exact', value: birthValue } : birthText ? { dateText: birthText } : null,
+            birth: birthInput(birth),
             familyId,
           };
     if (mode === 'existing' && existing === null) return setError('Выберите человека из списка');
@@ -172,52 +170,17 @@ export function RelativeForm({
       </div>
 
       {mode === 'new' ? (
-        <>
-          <label>
-            Фамилия
-            <input value={surname} onChange={(e) => setSurname(e.target.value)} maxLength={100} />
-          </label>
-          <label>
-            Имя
-            <input value={givenName} onChange={(e) => setGivenName(e.target.value)} maxLength={100} autoFocus />
-          </label>
-          <label>
-            Отчество
-            <input value={patronymic} onChange={(e) => setPatronymic(e.target.value)} maxLength={100} />
-          </label>
-          <label>
-            Фамилия при рождении
-            <input
-              value={birthSurname}
-              onChange={(e) => setBirthSurname(e.target.value)}
-              maxLength={100}
-              placeholder="если отличается — например, девичья"
-            />
-          </label>
-          <fieldset>
-            <legend>Пол</legend>
-            <div className="choice-row">
-              {(
-                [
-                  ['M', 'мужской'],
-                  ['F', 'женский'],
-                  ['U', 'не указан'],
-                ] as const
-              ).map(([value, label]) => (
-                <label key={value} className="choice">
-                  <input type="radio" name="relative-sex" checked={sex === value} onChange={() => setSex(value)} />
-                  {label}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-          <fieldset>
-            <legend>Дата рождения, если известна</legend>
-            <div className="date-row">
-              <DateFields value={birth} onChange={setBirth} />
-            </div>
-          </fieldset>
-        </>
+        <NewPersonFields
+          value={{ surname, givenName, patronymic, birthSurname, sex, birth }}
+          onChange={{
+            surname: setSurname,
+            givenName: setGivenName,
+            patronymic: setPatronymic,
+            birthSurname: setBirthSurname,
+            sex: setSex,
+            birth: setBirth,
+          }}
+        />
       ) : (
         <PersonPicker index={index} exclude={person.id} value={existing} onChange={setExisting} />
       )}
@@ -248,6 +211,80 @@ export function RelativeForm({
         </button>
       </div>
     </form>
+  );
+}
+
+type NewPerson = {
+  surname: string;
+  givenName: string;
+  patronymic: string;
+  birthSurname: string;
+  sex: 'M' | 'F' | 'U';
+  birth: PartialDate;
+};
+
+/** Дата рождения для API: точная или частичная дата, «12 марта» без года или ничего. */
+export function birthInput(birth: PartialDate): RelativeInput['birth'] {
+  const value = joinDate(birth);
+  const text = yearlessText(birth);
+  return value ? { modifier: 'exact', value } : text ? { dateText: text } : null;
+}
+
+/** Поля нового человека — для родственника и для первого человека в пустом дереве. */
+export function NewPersonFields({
+  value,
+  onChange,
+}: {
+  value: NewPerson;
+  onChange: { [K in keyof NewPerson]: (v: NewPerson[K]) => void };
+}) {
+  return (
+    <>
+      <label>
+        Фамилия
+        <input value={value.surname} onChange={(e) => onChange.surname(e.target.value)} maxLength={100} />
+      </label>
+      <label>
+        Имя
+        <input value={value.givenName} onChange={(e) => onChange.givenName(e.target.value)} maxLength={100} autoFocus />
+      </label>
+      <label>
+        Отчество
+        <input value={value.patronymic} onChange={(e) => onChange.patronymic(e.target.value)} maxLength={100} />
+      </label>
+      <label>
+        Фамилия при рождении
+        <input
+          value={value.birthSurname}
+          onChange={(e) => onChange.birthSurname(e.target.value)}
+          maxLength={100}
+          placeholder="если отличается — например, девичья"
+        />
+      </label>
+      <fieldset>
+        <legend>Пол</legend>
+        <div className="choice-row">
+          {(
+            [
+              ['M', 'мужской'],
+              ['F', 'женский'],
+              ['U', 'не указан'],
+            ] as const
+          ).map(([sex, label]) => (
+            <label key={sex} className="choice">
+              <input type="radio" name="relative-sex" checked={value.sex === sex} onChange={() => onChange.sex(sex)} />
+              {label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Дата рождения, если известна</legend>
+        <div className="date-row">
+          <DateFields value={value.birth} onChange={onChange.birth} />
+        </div>
+      </fieldset>
+    </>
   );
 }
 
