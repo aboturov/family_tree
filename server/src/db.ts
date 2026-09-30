@@ -178,6 +178,30 @@ const migrations: string[] = [
       AND NOT EXISTS (SELECT 1 FROM family_children WHERE family_id = families.id)
       AND NOT EXISTS (SELECT 1 FROM events WHERE family_id = families.id);
   `,
+  `
+  -- Id фото больше не переиспользуются (AUTOINCREMENT). Браузер кеширует файл по id на год,
+  -- а в корзине лежат файлы удалённых фото. Раньше новое фото получало id только что
+  -- удалённого, и устройство, где старое осталось в кеше, показывало его вместо нового.
+  CREATE TABLE media_v2 (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    person_id INTEGER NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
+    caption TEXT NOT NULL DEFAULT '',
+    width INTEGER NOT NULL,
+    height INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+  );
+  INSERT INTO media_v2 (id, person_id, caption, width, height, created_at, created_by)
+    SELECT id, person_id, caption, width, height, created_at, created_by FROM media;
+  DROP TABLE media;
+  ALTER TABLE media_v2 RENAME TO media;
+  CREATE INDEX media_person ON media(person_id);
+  -- Счёт — от самого большого id, какой был: id удалённых фото тоже заняты.
+  DELETE FROM sqlite_sequence WHERE name = 'media';
+  INSERT INTO sqlite_sequence (name, seq)
+    SELECT 'media', coalesce(max(id), 0)
+    FROM (SELECT id FROM media UNION ALL SELECT entity_id AS id FROM audit_log WHERE entity = 'media');
+  `,
 ];
 
 export function openDb(file: string): Db {
@@ -190,15 +214,27 @@ export function openDb(file: string): Db {
 
 function migrate(db: Db) {
   const { user_version: current } = db.prepare('PRAGMA user_version').get() as { user_version: number };
-  for (let version = current; version < migrations.length; version++) {
-    db.exec('BEGIN');
-    try {
-      db.exec(migrations[version]);
-      db.exec(`PRAGMA user_version = ${version + 1}`);
-      db.exec('COMMIT');
-    } catch (error) {
-      db.exec('ROLLBACK');
-      throw error;
+  if (current >= migrations.length) return;
+  // Пересборка таблицы (новая, копия, DROP старой) при включённых внешних ключах обнулила бы
+  // ссылки на неё — например, аватарки на media. Внутри транзакции ключи не выключить, поэтому
+  // выключаем на время миграций, а целостность проверяем перед каждым COMMIT.
+  db.exec('PRAGMA foreign_keys = OFF');
+  try {
+    for (let version = current; version < migrations.length; version++) {
+      db.exec('BEGIN');
+      try {
+        db.exec(migrations[version]);
+        if (db.prepare('PRAGMA foreign_key_check').all().length) {
+          throw new Error(`Миграция ${version + 1} нарушила внешние ключи`);
+        }
+        db.exec(`PRAGMA user_version = ${version + 1}`);
+        db.exec('COMMIT');
+      } catch (error) {
+        db.exec('ROLLBACK');
+        throw error;
+      }
     }
+  } finally {
+    db.exec('PRAGMA foreign_keys = ON');
   }
 }
