@@ -7,7 +7,6 @@ type PersonRow = {
   surname: string;
   birth_surname: string;
   sex: string;
-  is_deceased: number;
   is_uncertain: number;
   bio: string;
   avatar_media_id: number | null;
@@ -69,14 +68,13 @@ export function mergeInto(db: Db, keepId: number, dropId: number) {
   const bio = [keep.bio, drop.bio].filter(Boolean).join('\n\n');
   db.prepare(
     `UPDATE persons SET given_name = ?, patronymic = ?, surname = ?, birth_surname = ?, sex = ?,
-       is_deceased = ?, is_uncertain = ?, bio = ? WHERE id = ?`,
+       is_uncertain = ?, bio = ? WHERE id = ?`,
   ).run(
     pick(keep.given_name, drop.given_name),
     pick(keep.patronymic, drop.patronymic),
     pick(keep.surname, drop.surname),
     pick(keep.birth_surname, drop.birth_surname),
     sex,
-    keep.is_deceased || drop.is_deceased,
     keep.is_uncertain && drop.is_uncertain,
     bio,
     keepId,

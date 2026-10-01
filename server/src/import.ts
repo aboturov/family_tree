@@ -43,7 +43,7 @@ const FAMILY_EVENTS: Record<string, string> = {
 
 // Пустые записи familio выгружает у всех; смысл несут только эти даже без даты:
 // «умер» и «развелись».
-const MEANINGFUL_WITHOUT_DETAILS = new Set(['divorce']);
+const MEANINGFUL_WITHOUT_DETAILS = new Set(['death', 'divorce']);
 
 export function isTreeEmpty(db: Db): boolean {
   const { n } = db.prepare('SELECT count(*) AS n FROM persons').get() as { n: number };
@@ -113,12 +113,10 @@ class Importer {
       .map((n) => n.value.trim())
       .filter(Boolean)
       .join('\n\n');
-    const isDeceased = child(node, 'DEAT') ? 1 : 0;
-
     const { id } = this.db
       .prepare(
-        `INSERT INTO persons (source_uid, source_ref, given_name, patronymic, surname, birth_surname, sex, is_deceased, is_uncertain, bio)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+        `INSERT INTO persons (source_uid, source_ref, given_name, patronymic, surname, birth_surname, sex, is_uncertain, bio)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       )
       .get(
         childValue(node, '_UID') || null,
@@ -128,7 +126,6 @@ class Importer {
         name.surname,
         name.birthSurname,
         sex,
-        isDeceased,
         name.uncertain ? 1 : 0,
         bio,
       ) as { id: number };

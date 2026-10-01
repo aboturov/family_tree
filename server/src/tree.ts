@@ -24,6 +24,7 @@ export type TreePerson = {
   surname: string;
   birthSurname: string;
   sex: 'M' | 'F' | 'U';
+  /** Есть событие смерти, хотя бы без даты. */
   isDeceased: boolean;
   isUncertain: boolean;
   bio: string;
@@ -107,7 +108,6 @@ export function getTree(db: Db): Tree {
       surname: string;
       birth_surname: string;
       sex: 'M' | 'F' | 'U';
-      is_deceased: number;
       is_uncertain: number;
       bio: string;
       version: number;
@@ -127,7 +127,7 @@ export function getTree(db: Db): Tree {
     surname: row.surname,
     birthSurname: row.birth_surname,
     sex: row.sex,
-    isDeceased: row.is_deceased === 1,
+    isDeceased: (personEvents.get(row.id) ?? []).some((e) => e.type === 'death'),
     isUncertain: row.is_uncertain === 1,
     bio: row.bio,
     events: personEvents.get(row.id) ?? [],

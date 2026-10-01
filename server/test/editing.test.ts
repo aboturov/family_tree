@@ -179,6 +179,35 @@ describe('события', () => {
   });
 });
 
+describe('смерть', () => {
+  it('галочка «Умер» — событие смерти без даты; без даты её можно снять', async () => {
+    await send('PATCH', '/api/persons/2', { version: 1, ...PERSON });
+    assert.equal(person(2).isDeceased, true);
+    assert.deepEqual(person(2).events.map((e) => [e.type, e.date]), [['death', null]]);
+
+    await send('PATCH', '/api/persons/2', { version: 2, ...PERSON });
+    assert.equal(person(2).events.length, 1, 'второе событие смерти не появляется');
+
+    await send('PATCH', '/api/persons/2', { version: 3, ...PERSON, isDeceased: false });
+    assert.equal(person(2).isDeceased, false);
+    assert.deepEqual(person(2).events, []);
+  });
+
+  it('дата смерти без галочки — тоже «умер»; с датой галочку не снять', async () => {
+    const created = await (
+      await send('POST', '/api/persons/2/events', { version: 1, type: 'death', date: { modifier: 'exact', value: '1980-03-10' } })
+    ).json();
+    assert.equal(person(2).isDeceased, true);
+
+    assert.equal((await send('PATCH', '/api/persons/2', { version: 2, ...PERSON, isDeceased: false })).status, 400);
+    assert.equal(person(2).isDeceased, true);
+    assert.equal(person(2).surname, '', 'правка карточки откатилась целиком');
+
+    await send('DELETE', `/api/events/${created.id}`, { version: 2 });
+    assert.equal(person(2).isDeceased, false);
+  });
+});
+
 describe('подсказки мест', () => {
   it('по подстроке, без учёта регистра', async () => {
     const res = await app.request('/api/places?q=ТВЕР', { headers: { cookie: viewerCookie } });

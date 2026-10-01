@@ -1,5 +1,5 @@
 import type { Db } from './db.ts';
-import { bumpVersion, EditError, parseEventFields, parseVersion, type PersonFields } from './editing.ts';
+import { bumpVersion, EditError, parseEventFields, parseVersion, setDeceased, type PersonFields } from './editing.ts';
 import { audit, inTransaction } from './journal.ts';
 import { mergeFamiliesOfSameCouple, mergeInto } from './merge.ts';
 
@@ -235,8 +235,8 @@ function checkExisting(db: Db, anchorId: number, relativeId: number, relation: R
 function createPerson(db: Db, userId: number, fields: PersonFields): number {
   const { id } = db
     .prepare(
-      `INSERT INTO persons (given_name, patronymic, surname, birth_surname, sex, is_deceased, is_uncertain, bio)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+      `INSERT INTO persons (given_name, patronymic, surname, birth_surname, sex, is_uncertain, bio)
+       VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id`,
     )
     .get(
       fields.givenName,
@@ -244,11 +244,11 @@ function createPerson(db: Db, userId: number, fields: PersonFields): number {
       fields.surname,
       fields.birthSurname,
       fields.sex,
-      fields.isDeceased ? 1 : 0,
       fields.isUncertain ? 1 : 0,
       fields.bio,
     ) as { id: number };
   audit(db, userId, 'person', id, 'create', null, fields);
+  setDeceased(db, userId, id, fields.isDeceased);
   return id;
 }
 

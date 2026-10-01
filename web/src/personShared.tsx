@@ -126,7 +126,7 @@ export type TimelineItem = {
   /** Удалять можно только своё событие, а не производное вроде «Рождения ребёнка». */
   deletable: boolean;
   familyId?: number;
-  /** Заготовка: рождения (или смерти у умершего) ещё нет — строка «Неизвестно», по карандашу событие создаётся. */
+  /** Заготовка: рождения или бракосочетания ещё нет — строка «Неизвестно», по карандашу событие создаётся. */
   placeholder?: boolean;
 };
 
@@ -162,17 +162,6 @@ export function timelineItems(person: Person, index: TreeIndex): TimelineItem[] 
       event: emptyEvent('birth'),
       label: 'Рождение',
       participants: parentRoles,
-      owner: self,
-      deletable: false,
-      placeholder: true,
-    });
-  }
-  if (person.isDeceased && !findEvent(person.events, 'death')) {
-    items.push({
-      key: 'death-placeholder',
-      event: emptyEvent('death'),
-      label: 'Смерть',
-      participants: [],
       owner: self,
       deletable: false,
       placeholder: true,

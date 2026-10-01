@@ -107,13 +107,16 @@ describe('importGedcom', () => {
     assert.deepEqual(ivan.events[0].place, { name: 'Деревня Примерово', lat: 57.5, lon: 40.1 });
   });
 
-  it('пустая запись о смерти означает «умер», но не создаёт событие', () => {
+  it('пустая запись о смерти — событие без даты: «умер, дата неизвестна»', () => {
     importGedcom(db, GEDCOM);
     const petr = person('I1');
     assert.equal(petr.isDeceased, true);
     assert.deepEqual(
-      petr.events.map((e) => e.type),
-      ['birth'],
+      petr.events.map((e) => [e.type, e.date]),
+      [
+        ['birth', { modifier: 'exact', value: '1900' }],
+        ['death', null],
+      ],
     );
   });
 
