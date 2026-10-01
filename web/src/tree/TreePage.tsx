@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import type { MarriageStyle } from './geometry.ts';
+import { EmptyTree } from '../editing/FirstPerson.tsx';
 import { PersonMiniCard, PersonPanel } from '../PersonPanel.tsx';
 import { applyTheme, readTheme, type Theme } from '../theme.ts';
 import { PersonOpenProvider } from '../personShared.tsx';
@@ -135,7 +136,7 @@ export default function TreePage({ tree, index, meId }: Props) {
   const selected = selectedId !== null ? index.persons.get(selectedId) : undefined;
   const selectedKinship = selected && selected.id !== centerId ? kinship.get(selected.id) : undefined;
 
-  if (tree.persons.length === 0) return <p className="placeholder">Дерево пока пустое.</p>;
+  if (tree.persons.length === 0) return <EmptyTree onCreated={(id) => select(id)} />;
 
   return (
     <div className="tree-page">

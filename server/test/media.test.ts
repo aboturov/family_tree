@@ -129,4 +129,14 @@ describe('фото', () => {
     assert.deepEqual(fs.readdirSync(mediaDir), ['trash']);
     assert.deepEqual(fs.readdirSync(path.join(mediaDir, 'trash')).sort(), [`${id}-thumb.jpg`, `${id}.jpg`]);
   });
+
+  it('новое фото не получает id удалённого', async () => {
+    const { id: removed } = await (await upload(1)).json();
+    await app.request(`/api/media/${removed}`, { method: 'DELETE', headers: { cookie: editor, origin: 'http://localhost' } });
+    const { id } = await (await upload(1, editor, jpeg(3), jpeg(4))).json();
+    // По старому адресу браузер держит в кеше удалённое фото, а в корзине лежат его файлы.
+    assert.ok(id > removed);
+    assert.deepEqual(new Uint8Array(await (await app.request(`/api/media/${id}/thumb`, { headers: { cookie: viewer } })).arrayBuffer()), jpeg(4));
+    assert.deepEqual(new Uint8Array(fs.readFileSync(path.join(mediaDir, 'trash', `${removed}-thumb.jpg`))), jpeg(2));
+  });
 });

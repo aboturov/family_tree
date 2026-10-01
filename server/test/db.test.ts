@@ -10,12 +10,12 @@ describe('миграции', () => {
   it('отметка «умер» становится событием смерти без даты', () => {
     const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'db-')), 'tree.db');
     let db = openDb(file);
-    // База как до седьмой миграции: «умер» — флаг в карточке человека.
+    // База как до восьмой миграции: «умер» — флаг в карточке человека.
     db.exec(`
       ALTER TABLE persons ADD COLUMN is_deceased INTEGER NOT NULL DEFAULT 0;
       INSERT INTO persons (id, given_name, is_deceased) VALUES (1, 'Анна', 1), (2, 'Иван', 1), (3, 'Пётр', 0);
       INSERT INTO events (person_id, type, date_modifier, date_value) VALUES (2, 'death', 'exact', '1980');
-      PRAGMA user_version = 6;
+      PRAGMA user_version = 7;
     `);
     db.close();
 

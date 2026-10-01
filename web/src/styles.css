@@ -230,6 +230,18 @@ button {
   color: var(--muted);
 }
 
+/* Пустое дерево: первый человек (editing/FirstPerson.tsx). */
+.empty-tree {
+  max-width: 520px;
+  margin: 48px auto;
+  padding: 0 16px;
+}
+
+.empty-tree h1 {
+  margin: 0 0 8px;
+  font-size: 1.6rem;
+}
+
 /* --- Вход --- */
 
 .auth {

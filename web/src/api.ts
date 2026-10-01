@@ -53,6 +53,9 @@ export const api = {
     if (!res.ok) throw new ApiError(res.status, data.error ?? `Ошибка ${res.status}`);
     return data as { id: number };
   },
+  /** Первый человек пустого дерева; остальные — через addRelative. */
+  addFirstPerson: (body: { person: NonNullable<RelativeInput['person']>; birth: RelativeInput['birth'] }) =>
+    request<{ id: number }>('/persons', body),
   addRelative: (personId: number, body: RelativeInput & { version: number }) =>
     request<{ id: number }>(`/persons/${personId}/relatives`, body),
   removeChild: (familyId: number, childId: number, version: number) =>
@@ -75,7 +78,9 @@ export const api = {
     request<{ ok: true }>(`/persons/${personId}/avatar`, body, 'PUT'),
 };
 
-export const photoUrl = (id: number, size: 'full' | 'thumb') => `/api/media/${id}/${size}`;
+// Сервер кеширует фото по адресу на год. Пока id фото переиспользовались, под одним адресом
+// успевало побывать другое фото; ?v=2 сбрасывает такие кеши — адреса с ним всегда верные.
+export const photoUrl = (id: number, size: 'full' | 'thumb') => `/api/media/${id}/${size}?v=2`;
 
 export type PreparedPhoto = { full: Blob; thumb: Blob; width: number; height: number };
 

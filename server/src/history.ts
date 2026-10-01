@@ -9,6 +9,7 @@ import { restoreMediaFiles, trashMediaFiles } from './media.ts';
 
 // Слияние меняет слишком много неявно (семьи пары, события) — его не откатываем.
 const UNDOABLE = new Set([
+  'person.add',
   'person.update',
   'person.delete',
   'relative.add',

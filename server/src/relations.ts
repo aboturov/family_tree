@@ -32,13 +32,16 @@ export function parseNewRelative(body: Record<string, unknown>, parsePerson: (b:
   if (familyId !== null && (typeof familyId !== 'number' || !Number.isInteger(familyId))) {
     throw new EditError(400, 'Неверная семья');
   }
-  let person: PersonFields | null = null;
-  if (existingId === null) {
-    person = parsePerson((body.person ?? {}) as Record<string, unknown>);
-    if (!person.givenName && !person.surname) throw new EditError(400, 'Укажите хотя бы имя или фамилию');
-  }
-  const birth = existingId === null && body.birth ? (body.birth as Record<string, unknown>) : null;
+  const { person, birth } = existingId === null ? parseNewPerson(body, parsePerson) : { person: null, birth: null };
   return { relation: body.relation as RelationKind, existingId, person, birth, familyId } satisfies NewRelative;
+}
+
+/** Новый человек из формы: поля карточки и, если известна, дата рождения. */
+export function parseNewPerson(body: Record<string, unknown>, parsePerson: (b: Record<string, unknown>) => PersonFields) {
+  const person = parsePerson((body.person ?? {}) as Record<string, unknown>);
+  if (!person.givenName && !person.surname) throw new EditError(400, 'Укажите хотя бы имя или фамилию');
+  const birth = body.birth ? (body.birth as Record<string, unknown>) : null;
+  return { person, birth };
 }
 
 // --- Чтение ---
@@ -193,14 +196,7 @@ export function addRelative(db: Db, userId: number, anchorId: number, expectedVe
       db.prepare('UPDATE persons SET version = version + 1 WHERE id = ?').run(relativeId);
     } else {
       relativeId = createPerson(db, userId, input.person!);
-      if (input.birth) {
-        const yearless = typeof input.birth.dateText === 'string';
-        const birth = parseEventFields(
-          { type: 'birth', date: yearless ? null : input.birth, dateText: yearless ? input.birth.dateText : '' },
-          'person',
-        );
-        addBirth(db, userId, relativeId, birth);
-      }
+      if (input.birth) addBirth(db, userId, relativeId, parseBirth(input.birth));
     }
 
     if (relation === 'parent') linkParent(db, userId, anchorId, relativeId);
@@ -209,6 +205,26 @@ export function addRelative(db: Db, userId: number, anchorId: number, expectedVe
     else linkSibling(db, userId, anchorId, relativeId);
     return relativeId;
   });
+}
+
+/**
+ * Первый человек пустого дерева. Дальше люди добавляются только родственниками кого-то из дерева —
+ * так дерево остаётся одним связным графом, от любого человека можно дойти до любого.
+ */
+export function addFirstPerson(db: Db, userId: number, input: ReturnType<typeof parseNewPerson>) {
+  return inTransaction(db, () => {
+    const { n } = db.prepare('SELECT count(*) AS n FROM persons').get() as { n: number };
+    if (n > 0) throw new EditError(409, 'В дереве уже есть люди: новых добавляют родственниками из карточки');
+    const id = createPerson(db, userId, input.person);
+    if (input.birth) addBirth(db, userId, id, parseBirth(input.birth));
+    return id;
+  });
+}
+
+/** Дата рождения из формы: точная или частичная дата либо «12 марта» без года. */
+function parseBirth(birth: Record<string, unknown>) {
+  const yearless = typeof birth.dateText === 'string';
+  return parseEventFields({ type: 'birth', date: yearless ? null : birth, dateText: yearless ? birth.dateText : '' }, 'person');
 }
 
 function checkExisting(db: Db, anchorId: number, relativeId: number, relation: RelationKind) {
