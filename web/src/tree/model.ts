@@ -98,8 +98,12 @@ function formatPartialDate(value: string): string {
   return year;
 }
 
-/** Отметка старого стиля после даты: «12 марта 1885 ст. ст.»; «ст. ст.» не разрываем переносом. */
-export const oldStyle = (event: TreeEvent) => (event.date?.calendar === 'julian' ? ' ст.\u00a0ст.' : '');
+/**
+ * Отметка старого стиля после даты: «12 марта 1885 ст. ст.»; «ст. ст.» не разрываем переносом.
+ * У даты без дня отметка ничего не меняет — её не пишем.
+ */
+export const oldStyle = (event: Pick<TreeEvent, 'date'>) =>
+  event.date?.calendar === 'julian' && event.date.value.length === 10 ? ' ст.\u00a0ст.' : '';
 
 export function formatDate(event: TreeEvent): string {
   const { date } = event;

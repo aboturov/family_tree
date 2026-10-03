@@ -56,8 +56,8 @@ describe('formatDate', () => {
     const birth = event('birth', '1885-03-12');
     assert.equal(formatDate(birth), '12 марта 1885');
     assert.equal(formatDate({ ...birth, date: { ...birth.date!, calendar: 'julian' } }), '12 марта 1885 ст.\u00a0ст.');
-    const about = event('birth', '1885', 'about');
-    assert.equal(formatDate({ ...about, date: { ...about.date!, calendar: 'julian' } }), 'около 1885 ст.\u00a0ст.');
+    const about = event('birth', '1885-03', 'about');
+    assert.equal(formatDate({ ...about, date: { ...about.date!, calendar: 'julian' } }), 'около март 1885', 'без дня — без отметки');
   });
 });
 
