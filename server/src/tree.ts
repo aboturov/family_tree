@@ -5,6 +5,8 @@ export type TreeEvent = {
   id: number;
   type: string;
   customType: string;
+  /** Что именно: название награды, звание, профессия. */
+  details: string;
   /** `calendar` — только у дат по старому стилю. */
   date: { modifier: DateModifier; value: string; valueTo?: string; calendar?: 'julian' } | null;
   dateText: string;
@@ -52,6 +54,7 @@ type EventRow = {
   family_id: number | null;
   type: string;
   custom_type: string;
+  details: string;
   date_modifier: DateModifier | null;
   date_value: string | null;
   date_value_to: string | null;
@@ -90,6 +93,7 @@ export function getTree(db: Db): Tree {
       id: row.id,
       type: row.type,
       customType: row.custom_type,
+      details: row.details,
       date:
         row.date_modifier && row.date_value
           ? {

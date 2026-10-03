@@ -302,6 +302,11 @@ const migrations: string[] = [
   CREATE INDEX audit_log_entity ON audit_log(entity, entity_id);
   CREATE INDEX audit_log_change ON audit_log(change_id);
   `,
+  `
+  -- Что именно: название награды, звание, профессия, учебное заведение. В GEDCOM это значение
+  -- строки события: \`1 OCCU Учитель\`, \`1 EVEN Орден Красной Звезды\` с \`2 TYPE Военная награда\`.
+  ALTER TABLE events ADD COLUMN details TEXT NOT NULL DEFAULT '';
+  `,
 ];
 
 export function openDb(file: string): Db {

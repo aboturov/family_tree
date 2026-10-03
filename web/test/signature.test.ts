@@ -9,6 +9,7 @@ const event = (id: number, type: string, value?: string): TreeEvent => ({
   id,
   type,
   customType: '',
+  details: '',
   date: value ? { modifier: 'exact', value } : null,
   dateText: '',
   place: null,

@@ -45,6 +45,9 @@ const FAMILY_EVENTS: Record<string, string> = {
 // «умер» и «развелись».
 const MEANINGFUL_WITHOUT_DETAILS = new Set(['death', 'divorce']);
 
+// У этих тегов значение строки — «что именно»: профессия, учебное заведение.
+const VALUE_IS_DETAILS = new Set(['occupation', 'education', 'graduation']);
+
 export function isTreeEmpty(db: Db): boolean {
   const { n } = db.prepare('SELECT count(*) AS n FROM persons').get() as { n: number };
   return n === 0;
@@ -197,7 +200,11 @@ class Importer {
       .map((n) => n.value.trim())
       .filter(Boolean)
       .join('\n');
-    const customType = type === 'custom' ? childValue(node, 'TYPE') || node.value.trim() : '';
+    const typeName = childValue(node, 'TYPE');
+    const customType = type === 'custom' ? typeName || node.value.trim() : '';
+    // Значение строки — «что именно» (`1 OCCU Учитель`). У `1 EVEN` без TYPE оно и есть название,
+    // а у рождения, смерти и брака там только «Y».
+    const details = VALUE_IS_DETAILS.has(type) || (type === 'custom' && typeName) ? node.value.trim() : '';
 
     const hasDetails = dateText || placeNode?.value.trim() || note || customType || node.value.trim();
     if (!hasDetails && !MEANINGFUL_WITHOUT_DETAILS.has(type)) return;
@@ -207,15 +214,16 @@ class Importer {
 
     this.db
       .prepare(
-        `INSERT INTO events (person_id, family_id, type, custom_type, date_modifier, date_value, date_value_to,
+        `INSERT INTO events (person_id, family_id, type, custom_type, details, date_modifier, date_value, date_value_to,
            date_calendar, date_text, place_id, note)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         owner.personId ?? null,
         owner.familyId ?? null,
         type,
         customType,
+        details,
         date?.modifier ?? null,
         date?.value ?? null,
         date?.valueTo ?? null,

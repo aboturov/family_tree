@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { api, ApiError, type RelationKind } from './api.ts';
+import { MedalIcon } from './Avatar.tsx';
 import { useEditing } from './editing/EditingContext.ts';
 import type { EventOwner } from './editing/EventDialog.tsx';
 import { RelativeForm } from './editing/Relations.tsx';
@@ -8,6 +9,8 @@ import { Link, personPath } from './router.ts';
 import { sortTimeline } from './timelineOrder.ts';
 import { parentsOf, siblingsOf } from './tree/kinship.ts';
 import {
+  awardsOf,
+  awardTitle,
   displayName,
   eventLabel,
   findEvent,
@@ -77,6 +80,18 @@ export function Summary({ person }: { person: Person }) {
   );
 }
 
+/** Награды под строкой о рождении: медаль вместо слова «Награды», дальше названия и годы. */
+export function Awards({ person }: { person: Person }) {
+  const awards = awardsOf(person);
+  if (!awards.length) return null;
+  return (
+    <p className="awards-line">
+      <MedalIcon />
+      {awards.map(awardTitle).join(', ')}
+    </p>
+  );
+}
+
 /** «брак 1973 · развод 1990»: бывших супругов видно сразу, без ленты событий. */
 export function marriageNote(family: Family): string | undefined {
   const year = (type: string) => findEvent(family.events, type)?.date?.value.slice(0, 4);
@@ -139,6 +154,7 @@ const emptyEvent = (type: string): TreeEvent => ({
   id: 0,
   type,
   customType: '',
+  details: '',
   date: null,
   dateText: '',
   place: null,

@@ -91,6 +91,16 @@ describe('история правок', () => {
     assert.deepEqual(personOf(1)!.events[0].date, julian);
   });
 
+  it('откат правки события возвращает название награды', async () => {
+    const award = { type: 'custom', customType: 'Военная награда' };
+    const { id } = await (await call('POST', '/api/persons/1/events', { version: 1, ...award, details: 'Медаль «За отвагу»' })).json();
+    await call('PATCH', `/api/events/${id}`, { version: 2, ...award, details: 'Орден Славы III степени' });
+    assert.equal(personOf(1)!.events[0].details, 'Орден Славы III степени');
+    const [item] = await history();
+    assert.equal((await undo(item.id)).status, 200);
+    assert.equal(personOf(1)!.events[0].details, 'Медаль «За отвагу»');
+  });
+
   it('добавление нового родственника откатывается вместе с семьёй', async () => {
     await call('POST', '/api/persons/1/relatives', {
       version: 1,

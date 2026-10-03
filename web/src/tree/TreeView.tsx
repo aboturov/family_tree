@@ -2,7 +2,7 @@ import { select } from 'd3-selection';
 import 'd3-transition';
 import { zoom, zoomIdentity, type ZoomBehavior } from 'd3-zoom';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { AvatarContent } from '../Avatar.tsx';
+import { AvatarContent, AvatarMedal } from '../Avatar.tsx';
 import { familyName } from '../surname.ts';
 import type { Kinship } from './kinship.ts';
 import { generationBands, generationLabel } from './generations.ts';
@@ -528,6 +528,9 @@ function PersonNode({
         </g>
       </g>
       <circle className="avatar-ring" cx={cx} cy={AVATAR.cy} r={AVATAR.radius + 2} />
+      <g transform={`translate(${cx - 50},0)`}>
+        <AvatarMedal person={person} />
+      </g>
 
       {badge && (
         <g

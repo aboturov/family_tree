@@ -80,6 +80,22 @@ export const FAMILY_EVENT_OPTIONS: EventTypeOption[] = [
 /** Своё название — если нужного типа нет в списке. */
 export const OTHER = 'custom:';
 
+// «Что именно» — у наград, званий, профессии и учёбы; у рождения или брака такого поля нет.
+const DETAILS_LABELS: Record<string, string> = {
+  occupation: 'Профессия, должность',
+  education: 'Учебное заведение',
+  'custom:Военная награда': 'Название награды',
+  'custom:Награда': 'Название награды',
+  'custom:Военная служба': 'Воинская часть',
+  'custom:Получение воинского звания/чина': 'Звание или чин',
+  'custom:Получение учёной степени': 'Степень',
+  'custom:Дворянский титул': 'Титул',
+  [OTHER]: 'Подробности',
+};
+
+/** Подпись поля «что именно» для типа из формы; null — у этого типа поля нет. */
+export const detailsLabel = (value: string): string | null => DETAILS_LABELS[value] ?? null;
+
 export function optionFor(options: EventTypeOption[], type: string, customType: string): string {
   if (type !== 'custom') return type;
   return options.some((o) => o.value === `custom:${customType}`) ? `custom:${customType}` : OTHER;

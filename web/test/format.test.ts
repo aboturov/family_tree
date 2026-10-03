@@ -1,12 +1,24 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { avatarImageBox, clampCrop } from '../src/avatarGeometry.ts';
-import { cardDates, displayName, formatDate, placeFull, placeShort, type Person, type TreeEvent } from '../src/tree/model.ts';
+import {
+  awardsOf,
+  awardTitle,
+  cardDates,
+  displayName,
+  eventTitle,
+  formatDate,
+  placeFull,
+  placeShort,
+  type Person,
+  type TreeEvent,
+} from '../src/tree/model.ts';
 
 const event = (type: string, value?: string, modifier: 'exact' | 'about' = 'exact'): TreeEvent => ({
   id: 0,
   type,
   customType: '',
+  details: '',
   date: value ? { modifier, value } : null,
   dateText: '',
   place: null,
@@ -110,5 +122,31 @@ describe('displayName', () => {
     assert.equal(displayName(named('Павлова', 'Иванова')), 'Павлова (Иванова) Анна');
     assert.equal(displayName(named('Орлова', 'Орлова')), 'Орлова Анна');
     assert.equal(displayName(named('Орлова', '')), 'Орлова Анна');
+  });
+});
+
+describe('награды', () => {
+  const award = (customType: string, details: string, value?: string, modifier: 'exact' | 'about' = 'exact'): TreeEvent => ({
+    ...event('custom', value, modifier),
+    customType,
+    details,
+  });
+
+  it('военные и прочие награды — по порядку ленты; служба и звание — не награды', () => {
+    const star = award('Военная награда', 'Орден Красной Звезды', '1944-03');
+    const labour = award('Награда', 'Орден Трудового Красного Знамени', '1949');
+    const service = award('Военная служба', 'Восстановительный батальон', '1941');
+    assert.deepEqual(awardsOf(person([event('birth', '1905'), service, star, labour])), [star, labour]);
+  });
+
+  it('название с годом; без названия — тип; дата «около» — с тильдой', () => {
+    assert.equal(awardTitle(award('Военная награда', 'Медаль «За отвагу»', '1943-07-12')), 'Медаль «За отвагу» (1943)');
+    assert.equal(awardTitle(award('Военная награда', '', '1943', 'about')), 'Военная награда (~1943)');
+    assert.equal(awardTitle(award('Награда', 'Почётная грамота')), 'Почётная грамота');
+  });
+
+  it('заголовок события: тип и что именно', () => {
+    assert.equal(eventTitle(award('Военная награда', 'Медаль «За отвагу»')), 'Военная награда — Медаль «За отвагу»');
+    assert.equal(eventTitle(event('birth', '1905')), 'Рождение');
   });
 });

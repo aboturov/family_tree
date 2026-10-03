@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { eventTypeGroups } from '../src/editing/eventTypes.ts';
+import { detailsLabel, eventTypeGroups, OTHER } from '../src/editing/eventTypes.ts';
 
 describe('типы нового события', () => {
   it('основные — в порядке жизни, остальные по алфавиту', () => {
@@ -19,5 +19,16 @@ describe('типы нового события', () => {
     assert.ok(!labels.includes('Смерть'));
     assert.ok(labels.includes('Похороны'));
     assert.ok(labels.includes('Работа или профессия'));
+  });
+});
+
+describe('поле «что именно»', () => {
+  it('есть у наград, званий, профессии и своего события; у рождения и брака — нет', () => {
+    assert.equal(detailsLabel('custom:Военная награда'), 'Название награды');
+    assert.equal(detailsLabel('custom:Получение воинского звания/чина'), 'Звание или чин');
+    assert.equal(detailsLabel('occupation'), 'Профессия, должность');
+    assert.equal(detailsLabel(OTHER), 'Подробности');
+    assert.equal(detailsLabel('birth'), null);
+    assert.equal(detailsLabel('marriage'), null);
   });
 });

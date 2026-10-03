@@ -143,6 +143,7 @@ const EVENT_COLUMNS = [
   'family_id',
   'type',
   'custom_type',
+  'details',
   'date_modifier',
   'date_value',
   'date_value_to',

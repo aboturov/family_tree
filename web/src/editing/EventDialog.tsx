@@ -23,7 +23,14 @@ import {
   yearlessText,
 } from './dateFields.tsx';
 import { useEditing } from './EditingContext.ts';
-import { eventTypeGroups, FAMILY_EVENT_OPTIONS, OTHER, optionFor, PERSON_EVENT_OPTIONS } from './eventTypes.ts';
+import {
+  detailsLabel,
+  eventTypeGroups,
+  FAMILY_EVENT_OPTIONS,
+  OTHER,
+  optionFor,
+  PERSON_EVENT_OPTIONS,
+} from './eventTypes.ts';
 
 // Окно события — как в familio: сначала тип, для брака и развода — супруг (вместо вопроса
 // «чьё событие»), дальше «Когда», дата, комментарий и место под ссылкой.
@@ -94,6 +101,7 @@ export function EventDialog({
       : (presetType ?? ''),
   );
   const [customName, setCustomName] = useState(event?.type === 'custom' ? event.customType : '');
+  const [details, setDetails] = useState(event?.details ?? '');
   const initialWhen =
     event?.date?.modifier === 'estimated' || event?.date?.modifier === 'calculated' ? 'about' : event?.date?.modifier;
   const [when, setWhen] = useState<string>(initialWhen ?? 'exact');
@@ -117,6 +125,8 @@ export function EventDialog({
   const isFamily = editing ? owner.kind === 'family' : FAMILY_VALUES.has(typeValue);
   const isOther = typeValue === OTHER;
   const chosen = allOptions.find((o) => o.value === typeValue);
+  // Что именно — только у типов, где это нужно; уже заполненное (из выгрузки) не прячем.
+  const detailsName = detailsLabel(typeValue) ?? (event?.details ? 'Подробности' : null);
   const typeName = (e: TreeEvent) => (e.type === 'marriage' ? 'Бракосочетание' : eventLabel(e));
   const title = editing
     ? isOther
@@ -145,6 +155,7 @@ export function EventDialog({
     const input: EventInput = {
       type: isOther ? 'custom' : chosen!.type,
       customType: isOther ? customName : chosen!.customType,
+      details: detailsName ? details : '',
       date: value
         ? { modifier: when, value, ...(valueTo ? { valueTo } : {}), ...(julian ? { calendar: 'julian' as const } : {}) }
         : null,
@@ -226,6 +237,11 @@ export function EventDialog({
             {isOther && (
               <Field label="Название события">
                 <input value={customName} onChange={(e) => setCustomName(e.target.value)} required maxLength={100} />
+              </Field>
+            )}
+            {detailsName && (
+              <Field label={detailsName}>
+                <input value={details} onChange={(e) => setDetails(e.target.value)} maxLength={300} />
               </Field>
             )}
 

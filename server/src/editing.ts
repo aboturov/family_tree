@@ -123,6 +123,8 @@ export function parseDate(value: unknown): DateFields | null {
 export type EventFields = {
   type: string;
   customType: string;
+  /** Что именно: название награды, звание, профессия — коротко, одной строкой. */
+  details: string;
   date: DateFields | null;
   /** Дата без года — только когда `date` пуста. */
   dateText: string;
@@ -144,6 +146,7 @@ export function parseEventFields(body: Record<string, unknown>, owner: 'person' 
   return {
     type: body.type,
     customType: body.type === 'custom' ? customType : '',
+    details: text(body.details, 'Подробности', 300),
     date,
     dateText,
     place: text(body.place, 'Место', 300),
@@ -282,15 +285,16 @@ export function addEvent(db: Db, userId: number, owner: Owner, expectedVersion: 
     bumpVersion(db, owner, expected);
     const { id } = db
       .prepare(
-        `INSERT INTO events (person_id, family_id, type, custom_type, date_modifier, date_value, date_value_to,
+        `INSERT INTO events (person_id, family_id, type, custom_type, details, date_modifier, date_value, date_value_to,
            date_calendar, date_text, place_id, note)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       )
       .get(
         owner.kind === 'person' ? owner.id : null,
         owner.kind === 'family' ? owner.id : null,
         fields.type,
         fields.customType,
+        fields.details,
         fields.date?.modifier ?? null,
         fields.date?.value ?? null,
         fields.date?.valueTo ?? null,
@@ -332,12 +336,13 @@ export function updateEvent(
       familyId = moveToFamily;
     }
     db.prepare(
-      `UPDATE events SET family_id = ?, type = ?, custom_type = ?, date_modifier = ?, date_value = ?, date_value_to = ?,
-         date_calendar = ?, date_text = ?, place_id = ?, note = ? WHERE id = ?`,
+      `UPDATE events SET family_id = ?, type = ?, custom_type = ?, details = ?, date_modifier = ?, date_value = ?,
+         date_value_to = ?, date_calendar = ?, date_text = ?, place_id = ?, note = ? WHERE id = ?`,
     ).run(
       familyId,
       fields.type,
       fields.customType,
+      fields.details,
       fields.date?.modifier ?? null,
       fields.date?.value ?? null,
       fields.date?.valueTo ?? null,

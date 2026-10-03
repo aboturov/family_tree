@@ -1,6 +1,6 @@
 import { photoUrl } from './api.ts';
 import { avatarImageBox } from './avatarGeometry.ts';
-import type { Person } from './tree/model.ts';
+import { awardsOf, awardTitle, type Person } from './tree/model.ts';
 
 // Силуэт-заглушка вместо фото, в координатах круга 100×100. Пара на общей основе: голова
 // и плечи, переходящие из шеи плавной дугой; волосы на тон темнее — у мужского короткая
@@ -48,6 +48,43 @@ export function AvatarContent({ person }: { person: Person }) {
   );
 }
 
+// Медаль: колодка с лентой и диск со звездой, в своих координатах 10×20.
+function MedalShapes() {
+  return (
+    <>
+      <path className="medal-ribbon" d="M0 0h10v7l-5 3-5-3z" />
+      <path className="medal-stripe" d="M4 0h2v8.8l-1 .6-1-.6z" />
+      <circle className="medal-disk" cx={5} cy={15} r={5} />
+      <path
+        className="medal-star"
+        d="M5 12l.73 1.99 2.12.08-1.66 1.32.57 2.04L5 16.25l-1.76 1.18.57-2.04-1.66-1.32 2.12-.08z"
+      />
+    </>
+  );
+}
+
+/** Медаль на груди аватарки, если у человека есть награды; в подсказке — какие. */
+export function AvatarMedal({ person }: { person: Person }) {
+  const awards = awardsOf(person);
+  if (!awards.length) return null;
+  // Носят слева на груди — со стороны зрителя справа, под плечом и над плашкой родства в дереве.
+  return (
+    <g className="avatar-medal" transform="translate(60.5 67) scale(0.85)">
+      <title>{`Награды: ${awards.map(awardTitle).join(', ')}`}</title>
+      <MedalShapes />
+    </g>
+  );
+}
+
+/** Значок перед списком наград. */
+export function MedalIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg className="medal-icon" width={(size * 11) / 21} height={size} viewBox="-0.5 -0.5 11 21" role="img" aria-label="Награды">
+      <MedalShapes />
+    </svg>
+  );
+}
+
 /** Круглый аватар для страниц (в дереве он рисуется внутри общего SVG). */
 export function Avatar({ person, size }: { person: Person; size: number }) {
   const clipId = `avatar-${person.id}-${size}`;
@@ -62,6 +99,7 @@ export function Avatar({ person, size }: { person: Person; size: number }) {
       <g clipPath={`url(#${clipId})`}>
         <AvatarContent person={person} />
       </g>
+      <AvatarMedal person={person} />
     </svg>
   );
 }

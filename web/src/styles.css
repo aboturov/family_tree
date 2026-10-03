@@ -922,6 +922,27 @@ select:focus {
   fill: var(--silhouette-hair-muted);
 }
 
+/* Медаль на аватарке и перед списком наград: цвета свои, не от темы — латунь и лента. */
+.medal-ribbon {
+  fill: #c62828;
+  stroke: rgb(0 0 0 / 0.35);
+  stroke-width: 0.5;
+}
+
+.medal-stripe {
+  fill: #f2c94c;
+}
+
+.medal-disk {
+  fill: #e0ac2e;
+  stroke: #8a6514;
+  stroke-width: 0.6;
+}
+
+.medal-star {
+  fill: #b3261e;
+}
+
 .avatar-ring {
   fill: none;
   stroke: transparent;
@@ -1440,6 +1461,10 @@ label.choice {
     grid-column: 4;
   }
 
+  .ev-participants.ev-wide {
+    grid-column: 3 / -2;
+  }
+
   .ev-note {
     grid-column: 3 / -2;
     color: var(--muted);
@@ -1638,6 +1663,24 @@ label.choice {
   background: none;
   border: 0;
   cursor: pointer;
+}
+
+/* Тип, дата и значок документа — одним текстом (длинный тип переносится, стрелка остаётся
+   справа); что именно (награда, профессия) — второй строкой. */
+.accordion-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.accordion-title svg {
+  margin-left: 4px;
+  vertical-align: -1px;
+}
+
+.accordion-details {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.95rem;
 }
 
 .accordion-head .chevron {
@@ -1965,6 +2008,16 @@ label.choice {
 
 .person-summary {
   margin: 0;
+}
+
+/* Значок — частью строки: на телефоне шапка по центру, и он стоит перед первым словом. */
+.awards-line {
+  margin: 6px 0 0;
+}
+
+.medal-icon {
+  margin-right: 6px;
+  vertical-align: -3px;
 }
 
 .badge-line {
