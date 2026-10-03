@@ -98,7 +98,8 @@ export type PersonInput = {
 export type EventInput = {
   type: string;
   customType: string;
-  date: { modifier: string; value: string; valueTo?: string } | null;
+  /** `calendar: 'julian'` — по старому стилю. */
+  date: { modifier: string; value: string; valueTo?: string; calendar?: 'julian' } | null;
   /** Дата без года («12 марта») — когда `date` пуста. */
   dateText: string;
   place: string;

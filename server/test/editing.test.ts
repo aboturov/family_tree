@@ -152,6 +152,23 @@ describe('события', () => {
     assert.deepEqual([person(1).events[0].date?.value, person(1).events[0].dateText], ['1899-04-21', '']);
   });
 
+  it('дата по старому стилю сохраняется с отметкой и снимается при правке', async () => {
+    const created = await (
+      await send('POST', '/api/persons/1/events', {
+        version: 1,
+        type: 'birth',
+        date: { modifier: 'exact', value: '1885-03-12', calendar: 'julian' },
+      })
+    ).json();
+    assert.deepEqual(person(1).events[0].date, { modifier: 'exact', value: '1885-03-12', calendar: 'julian' });
+    await send('PATCH', `/api/events/${created.id}`, {
+      version: 2,
+      type: 'birth',
+      date: { modifier: 'exact', value: '1885-03-12' },
+    });
+    assert.deepEqual(person(1).events[0].date, { modifier: 'exact', value: '1885-03-12' });
+  });
+
   it('события брака — у семьи', async () => {
     const res = await send('POST', '/api/families/1/events', {
       version: 1,
@@ -171,6 +188,7 @@ describe('события', () => {
       { version: 1, type: 'birth', date: { modifier: 'between', value: '1941' } },
       { version: 1, type: 'birth', date: { modifier: 'between', value: '1945', valueTo: '1941' } },
       { version: 1, type: 'birth', date: { modifier: 'someday', value: '1941' } },
+      { version: 1, type: 'birth', date: { modifier: 'exact', value: '1885', calendar: 'hebrew' } },
       { version: 1, type: 'birth', date: null, dateText: 'когда-то весной' },
       { version: 1, type: 'birth', date: null, dateText: '30 февраля' },
     ];

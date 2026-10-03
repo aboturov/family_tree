@@ -82,6 +82,15 @@ describe('история правок', () => {
     assert.equal((await undo(item.id)).status, 400);
   });
 
+  it('откат правки события возвращает отметку старого стиля', async () => {
+    const julian = { modifier: 'exact', value: '1885-03-12', calendar: 'julian' };
+    const { id } = await (await call('POST', '/api/persons/1/events', { version: 1, type: 'birth', date: julian })).json();
+    await call('PATCH', `/api/events/${id}`, { version: 2, type: 'birth', date: { modifier: 'exact', value: '1885-03-24' } });
+    const [item] = await history();
+    assert.equal((await undo(item.id)).status, 200);
+    assert.deepEqual(personOf(1)!.events[0].date, julian);
+  });
+
   it('добавление нового родственника откатывается вместе с семьёй', async () => {
     await call('POST', '/api/persons/1/relatives', {
       version: 1,

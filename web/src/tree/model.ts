@@ -6,7 +6,8 @@ export type TreeEvent = {
   id: number;
   type: string;
   customType: string;
-  date: { modifier: DateModifier; value: string; valueTo?: string } | null;
+  /** `calendar` — только у дат по старому стилю. */
+  date: { modifier: DateModifier; value: string; valueTo?: string; calendar?: 'julian' } | null;
   dateText: string;
   place: { name: string; lat: number | null; lon: number | null } | null;
   note: string;
@@ -97,9 +98,16 @@ function formatPartialDate(value: string): string {
   return year;
 }
 
+/** Отметка старого стиля после даты: «12 марта 1885 ст. ст.»; «ст. ст.» не разрываем переносом. */
+export const oldStyle = (event: TreeEvent) => (event.date?.calendar === 'julian' ? ' ст.\u00a0ст.' : '');
+
 export function formatDate(event: TreeEvent): string {
   const { date } = event;
   if (!date) return event.dateText;
+  return formatDateValue(date) + oldStyle(event);
+}
+
+function formatDateValue(date: NonNullable<TreeEvent['date']>): string {
   const value = formatPartialDate(date.value);
   switch (date.modifier) {
     case 'about':

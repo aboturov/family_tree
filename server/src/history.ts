@@ -132,6 +132,7 @@ const EVENT_COLUMNS = [
   'date_modifier',
   'date_value',
   'date_value_to',
+  'date_calendar',
   'date_text',
   'place_id',
   'note',

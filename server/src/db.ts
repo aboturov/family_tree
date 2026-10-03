@@ -210,6 +210,12 @@ const migrations: string[] = [
     WHERE is_deceased = 1 AND NOT EXISTS (SELECT 1 FROM events WHERE person_id = p.id AND type = 'death');
   ALTER TABLE persons DROP COLUMN is_deceased;
   `,
+  `
+  -- Дата по старому стилю (юлианский календарь, как @#DJULIAN@ в GEDCOM): метрики до 1918 года.
+  -- Храним как записано, без пересчёта, — отметка только говорит, как читать дату.
+  ALTER TABLE events ADD COLUMN date_calendar TEXT NOT NULL DEFAULT 'gregorian'
+    CHECK (date_calendar IN ('gregorian', 'julian'));
+  `,
 ];
 
 export function openDb(file: string): Db {

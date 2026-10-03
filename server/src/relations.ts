@@ -273,14 +273,15 @@ function createPerson(db: Db, userId: number, fields: PersonFields): number {
 function addBirth(db: Db, userId: number, personId: number, fields: ReturnType<typeof parseEventFields>) {
   const { id } = db
     .prepare(
-      `INSERT INTO events (person_id, type, date_modifier, date_value, date_value_to, date_text)
-       VALUES (?, 'birth', ?, ?, ?, ?) RETURNING id`,
+      `INSERT INTO events (person_id, type, date_modifier, date_value, date_value_to, date_calendar, date_text)
+       VALUES (?, 'birth', ?, ?, ?, ?, ?) RETURNING id`,
     )
     .get(
       personId,
       fields.date?.modifier ?? null,
       fields.date?.value ?? null,
       fields.date?.valueTo ?? null,
+      fields.date?.calendar ?? 'gregorian',
       fields.dateText,
     ) as { id: number };
   audit(db, userId, 'event', id, 'create', null, { owner: { kind: 'person', id: personId }, ...fields });

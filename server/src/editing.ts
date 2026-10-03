@@ -90,10 +90,20 @@ function isYearlessDate(value: string): boolean {
   return month >= 0 && day >= 1 && day <= DAYS_IN_MONTH[month];
 }
 
+export type Calendar = 'gregorian' | 'julian';
+
+/** Календарь даты: по умолчанию — новый стиль. */
+export function parseCalendar(value: unknown): Calendar {
+  if (value === undefined || value === null || value === 'gregorian') return 'gregorian';
+  if (value === 'julian') return 'julian';
+  throw new EditError(400, 'Календарь: gregorian или julian');
+}
+
 export type EventFields = {
   type: string;
   customType: string;
-  date: { modifier: DateModifier; value: string; valueTo: string | null } | null;
+  /** `calendar: 'julian'` — по старому стилю. */
+  date: { modifier: DateModifier; value: string; valueTo: string | null; calendar: Calendar } | null;
   /** Дата без года — только когда `date` пуста. */
   dateText: string;
   place: string;
@@ -121,7 +131,7 @@ export function parseEventFields(body: Record<string, unknown>, owner: 'person' 
       if (d.valueTo < d.value) throw new EditError(400, 'Вторая дата периода раньше первой');
       valueTo = d.valueTo;
     }
-    date = { modifier, value: d.value, valueTo };
+    date = { modifier, value: d.value, valueTo, calendar: parseCalendar(d.calendar) };
   }
   const dateText = date ? '' : text(body.dateText, 'Дата', 20);
   if (dateText && !isYearlessDate(dateText)) throw new EditError(400, 'Дата без года: «12 марта» или «март»');
@@ -245,6 +255,7 @@ type EventRow = {
   date_modifier: string | null;
   date_value: string | null;
   date_value_to: string | null;
+  date_calendar: Calendar;
   date_text: string;
   place_id: number | null;
   note: string;
@@ -265,8 +276,9 @@ export function addEvent(db: Db, userId: number, owner: Owner, expectedVersion: 
     bumpVersion(db, owner, expected);
     const { id } = db
       .prepare(
-        `INSERT INTO events (person_id, family_id, type, custom_type, date_modifier, date_value, date_value_to, date_text, place_id, note)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+        `INSERT INTO events (person_id, family_id, type, custom_type, date_modifier, date_value, date_value_to,
+           date_calendar, date_text, place_id, note)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       )
       .get(
         owner.kind === 'person' ? owner.id : null,
@@ -276,6 +288,7 @@ export function addEvent(db: Db, userId: number, owner: Owner, expectedVersion: 
         fields.date?.modifier ?? null,
         fields.date?.value ?? null,
         fields.date?.valueTo ?? null,
+        fields.date?.calendar ?? 'gregorian',
         fields.dateText,
         placeId(db, userId, fields.place),
         fields.note,
@@ -314,7 +327,7 @@ export function updateEvent(
     }
     db.prepare(
       `UPDATE events SET family_id = ?, type = ?, custom_type = ?, date_modifier = ?, date_value = ?, date_value_to = ?,
-         date_text = ?, place_id = ?, note = ? WHERE id = ?`,
+         date_calendar = ?, date_text = ?, place_id = ?, note = ? WHERE id = ?`,
     ).run(
       familyId,
       fields.type,
@@ -322,6 +335,7 @@ export function updateEvent(
       fields.date?.modifier ?? null,
       fields.date?.value ?? null,
       fields.date?.valueTo ?? null,
+      fields.date?.calendar ?? 'gregorian',
       fields.dateText,
       placeId(db, userId, fields.place),
       fields.note,
