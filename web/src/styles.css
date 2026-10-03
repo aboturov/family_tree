@@ -1408,13 +1408,41 @@ label.choice {
   gap: 8px;
 }
 
+/* Свободный текст с переносами строк; свёрнутый — первые строки, остальное по «Показать полностью». */
+.long-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.long-text.clamped {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
 @container (min-width: 760px) {
   .events-head,
   .event-row {
     display: grid;
     /* Участникам — больше всех: «Отец: Иванов Михаил Александрович» должен влезать в строку. */
-    grid-template-columns: 170px 100px minmax(0, 2fr) minmax(0, 1.3fr) minmax(0, 1fr) 80px;
-    column-gap: 16px;
+    grid-template-columns: 170px 100px minmax(0, 2fr) minmax(0, 1.3fr) 80px;
+    gap: 4px 16px;
+  }
+
+  /* Пустых ячеек нет — поэтому колонки заданы явно. Комментарий — под участниками и местом на
+     их ширину, а если их нет — прямо в строке события. */
+  .ev-participants {
+    grid-column: 3;
+  }
+
+  .ev-place {
+    grid-column: 4;
+  }
+
+  .ev-note {
+    grid-column: 3 / -2;
+    color: var(--muted);
   }
 
   .events-head {
@@ -1438,6 +1466,8 @@ label.choice {
 
   .ev-actions {
     position: static;
+    grid-row: 1;
+    grid-column: -2;
     justify-content: flex-end;
   }
 }
@@ -2363,6 +2393,13 @@ label.choice {
   min-width: 0;
 }
 
+/* Скан не уезжает вместе с длинной расшифровкой: читать её и сверять со сканом. */
+.doc-scans {
+  position: sticky;
+  top: 0;
+  align-self: start;
+}
+
 .doc-info h3 {
   margin: 4px 0 6px;
   font-size: 1rem;
@@ -2592,6 +2629,10 @@ label.doc-frame {
   .doc-view,
   .doc-form-row {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .doc-scans {
+    position: static;
   }
 
   .doc-form-shelfmark {
