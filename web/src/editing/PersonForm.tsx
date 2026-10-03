@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { api, ApiError, type PersonInput } from '../api.ts';
-import type { Person } from '../tree/model.ts';
+import { findEvent, type Person } from '../tree/model.ts';
 import { useEditing } from './EditingContext.ts';
 
 export function PersonForm({ person, onDone }: { person: Person; onDone: () => void }) {
@@ -20,6 +20,9 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
   const [pending, setPending] = useState(false);
   const set = <K extends keyof PersonInput>(key: K, value: PersonInput[K]) =>
     setFields((f) => ({ ...f, [key]: value }));
+  // Галочка — это пустое событие смерти; смерть с датой или местом убирают из ленты событий.
+  const death = findEvent(person.events, 'death');
+  const deathKnown = !!death && !!(death.date || death.dateText || death.place || death.note);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -78,9 +81,15 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
         </div>
       </fieldset>
       <label className="choice">
-        <input type="checkbox" checked={fields.isDeceased} onChange={(e) => set('isDeceased', e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={fields.isDeceased}
+          disabled={deathKnown}
+          onChange={(e) => set('isDeceased', e.target.checked)}
+        />
         Умер{fields.sex === 'F' ? 'ла' : ''} (даже если дата неизвестна)
       </label>
+      {deathKnown && <p className="muted small">Смерть уже есть в событиях — чтобы снять отметку, удалите это событие.</p>}
       <label className="choice">
         <input type="checkbox" checked={fields.isUncertain} onChange={(e) => set('isUncertain', e.target.checked)} />
         Данные под вопросом

@@ -202,6 +202,14 @@ const migrations: string[] = [
     SELECT 'media', coalesce(max(id), 0)
     FROM (SELECT id FROM media UNION ALL SELECT entity_id AS id FROM audit_log WHERE entity = 'media');
   `,
+  `
+  -- «Умер» — это событие смерти, пусть и без даты (как \`1 DEAT Y\` в GEDCOM), а не отдельный флаг:
+  -- флаг и событие расходились, когда дату вводили без галочки.
+  INSERT INTO events (person_id, type)
+    SELECT id, 'death' FROM persons p
+    WHERE is_deceased = 1 AND NOT EXISTS (SELECT 1 FROM events WHERE person_id = p.id AND type = 'death');
+  ALTER TABLE persons DROP COLUMN is_deceased;
+  `,
 ];
 
 export function openDb(file: string): Db {

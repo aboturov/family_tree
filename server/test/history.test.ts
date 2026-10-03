@@ -143,6 +143,25 @@ describe('история правок', () => {
     assert.equal(fs.existsSync(path.join(mediaDir, `${photo}-thumb.jpg`)), true);
   });
 
+  it('откат галочки «Умер» убирает и событие смерти', async () => {
+    await call('PATCH', '/api/persons/1', { version: 1, ...fields('Максим'), isDeceased: true });
+    assert.equal(personOf(1)!.isDeceased, true);
+    const [item] = await history();
+    assert.equal((await undo(item.id)).status, 200);
+    assert.equal(personOf(1)!.isDeceased, false);
+    assert.deepEqual(personOf(1)!.events, []);
+  });
+
+  it('удалённый, пока «умер» был флагом, возвращается с событием смерти', async () => {
+    await call('DELETE', '/api/persons/1', { version: 1 });
+    // Снимок в старом виде — с колонкой is_deceased.
+    db.exec(`UPDATE audit_log SET before = json_set(before, '$.person.is_deceased', 1) WHERE entity = 'person' AND action = 'delete'`);
+    const [item] = await history();
+    assert.equal((await undo(item.id)).status, 200);
+    assert.equal(personOf(1)!.isDeceased, true);
+    assert.deepEqual(personOf(1)!.events.map((e) => [e.type, e.date]), [['death', null]]);
+  });
+
   it('правку нельзя откатить, пока не откачена более поздняя правка тех же записей', async () => {
     await call('PATCH', '/api/persons/1', { version: 1, ...fields('Григорий') });
     await call('PATCH', '/api/persons/1', { version: 2, ...fields('Гриша') });

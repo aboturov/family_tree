@@ -155,7 +155,6 @@ type PersonRow = {
   surname: string;
   birth_surname: string;
   sex: 'M' | 'F' | 'U';
-  is_deceased: number;
   is_uncertain: number;
   bio: string;
 };
@@ -167,20 +166,42 @@ export function updatePerson(db: Db, userId: number, personId: number, expectedV
     bumpVersion(db, { kind: 'person', id: personId }, expected);
     db.prepare(
       `UPDATE persons SET given_name = ?, patronymic = ?, surname = ?, birth_surname = ?, sex = ?,
-         is_deceased = ?, is_uncertain = ?, bio = ? WHERE id = ?`,
+         is_uncertain = ?, bio = ? WHERE id = ?`,
     ).run(
       fields.givenName,
       fields.patronymic,
       fields.surname,
       fields.birthSurname,
       fields.sex,
-      fields.isDeceased ? 1 : 0,
       fields.isUncertain ? 1 : 0,
       fields.bio,
       personId,
     );
     audit(db, userId, 'person', personId, 'update', before, fields);
+    setDeceased(db, userId, personId, fields.isDeceased);
   });
+}
+
+/**
+ * «Умер» — это событие смерти, пусть и без даты (как `1 DEAT Y` в GEDCOM). Галочка в карточке
+ * добавляет пустое событие или убирает его; смерть с датой или местом убирают только из ленты.
+ */
+export function setDeceased(db: Db, userId: number, personId: number, deceased: boolean) {
+  const deaths = db.prepare("SELECT * FROM events WHERE person_id = ? AND type = 'death'").all(personId) as EventRow[];
+  if (deceased && deaths.length === 0) {
+    const { id } = db
+      .prepare("INSERT INTO events (person_id, type) VALUES (?, 'death') RETURNING id")
+      .get(personId) as { id: number };
+    audit(db, userId, 'event', id, 'create', null, { owner: { kind: 'person', id: personId }, type: 'death' });
+  }
+  if (deceased || deaths.length === 0) return;
+  if (deaths.some((e) => e.date_value !== null || e.date_text || e.place_id !== null || e.note)) {
+    throw new EditError(400, 'У смерти указаны дата или место — чтобы снять отметку «Умер», удалите событие «Смерть»');
+  }
+  for (const death of deaths) {
+    db.prepare('DELETE FROM events WHERE id = ?').run(death.id);
+    audit(db, userId, 'event', death.id, 'delete', death, null);
+  }
 }
 
 // --- Места ---

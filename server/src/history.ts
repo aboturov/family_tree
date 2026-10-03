@@ -119,7 +119,6 @@ const PERSON_COLUMNS = [
   'surname',
   'birth_surname',
   'sex',
-  'is_deceased',
   'is_uncertain',
   'bio',
   'avatar_media_id',
@@ -236,8 +235,13 @@ function revertRow(db: Db, userId: number, row: AuditRow, files: Files) {
       media: (Record<string, unknown> | number)[];
       families: (FamilySnapshot & { id: number })[];
     };
-    insertRow(db, 'persons', { ...snap.person, version: Number(snap.person.version ?? 1) + 1 });
+    // Снимки до отказа от флага «умер» хранят is_deceased — теперь это событие смерти без даты.
+    const { is_deceased: deceased, ...person } = snap.person;
+    insertRow(db, 'persons', { ...person, version: Number(person.version ?? 1) + 1 });
     for (const event of snap.events) insertRow(db, 'events', event);
+    if (deceased === 1 && !snap.events.some((e) => e.type === 'death')) {
+      db.prepare("INSERT INTO events (person_id, type) VALUES (?, 'death')").run(row.entity_id);
+    }
     for (const media of snap.media) {
       if (typeof media === 'number') continue; // старый формат снимка — без записи фото
       insertRow(db, 'media', media);
