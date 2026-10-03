@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { lazy, Suspense, useEffect, useId, useMemo, useState, type FormEvent, type InputHTMLAttributes } from 'react';
 import { api, ApiError, type User } from './api.ts';
 import { ChunkErrorBoundary } from './ChunkErrorBoundary.tsx';
 import { EditingProvider } from './editing/EditingContext.ts';
@@ -70,20 +70,61 @@ function LoginPage({ onLogin }: { onLogin: (user: User) => void }) {
           Логин
           <input value={login} onChange={(e) => setLogin(e.target.value)} autoComplete="username" autoFocus required />
         </label>
-        <label>
-          Пароль
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            required
-          />
-        </label>
+        <PasswordField
+          label="Пароль"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
+          required
+        />
         {error && <p className="error">{error}</p>}
         <button disabled={pending}>Войти</button>
       </form>
     </main>
+  );
+}
+
+// Поле пароля с глазком. Подпись связана через id, а не обёрткой: иначе подпись кнопки
+// попала бы в имя поля для скринридера («Пароль Показать пароль»).
+function PasswordField({ label, ...props }: { label: string } & Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'type'>) {
+  const id = useId();
+  const [visible, setVisible] = useState(false);
+  const toggleLabel = visible ? 'Скрыть пароль' : 'Показать пароль';
+
+  return (
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
+      <div className="password-field">
+        {/* Открытый пароль — обычное текстовое поле: без этого телефон поправит или сделает заглавной первую букву. */}
+        <input
+          {...props}
+          id={id}
+          type={visible ? 'text' : 'password'}
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+        />
+        <button
+          type="button"
+          className="password-toggle"
+          onClick={() => setVisible((v) => !v)}
+          aria-label={toggleLabel}
+          title={toggleLabel}
+        >
+          <EyeIcon crossed={visible} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function EyeIcon({ crossed }: { crossed: boolean }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+      <path d="M1.75 10s3-5.75 8.25-5.75S18.25 10 18.25 10 15.25 15.75 10 15.75 1.75 10 1.75 10Z" strokeLinejoin="round" />
+      <circle cx="10" cy="10" r="2.75" />
+      {crossed && <path d="m3.5 3.5 13 13" strokeLinecap="round" />}
+    </svg>
   );
 }
 
@@ -105,37 +146,28 @@ function ChangePasswordPage({ onChanged }: { onChanged: (user: User) => void }) 
       <form className="card" onSubmit={onSubmit}>
         <h1>Смена пароля</h1>
         <p className="hint">Вы вошли с временным паролем. Придумайте свой — не короче 10 символов.</p>
-        <label>
-          Временный пароль
-          <input
-            type="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            autoComplete="current-password"
-            required
-          />
-        </label>
-        <label>
-          Новый пароль
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            autoComplete="new-password"
-            minLength={10}
-            required
-          />
-        </label>
-        <label>
-          Повторите новый пароль
-          <input
-            type="password"
-            value={repeat}
-            onChange={(e) => setRepeat(e.target.value)}
-            autoComplete="new-password"
-            required
-          />
-        </label>
+        <PasswordField
+          label="Временный пароль"
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+          autoComplete="current-password"
+          required
+        />
+        <PasswordField
+          label="Новый пароль"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          autoComplete="new-password"
+          minLength={10}
+          required
+        />
+        <PasswordField
+          label="Повторите новый пароль"
+          value={repeat}
+          onChange={(e) => setRepeat(e.target.value)}
+          autoComplete="new-password"
+          required
+        />
         {mismatch && <p className="error">Пароли не совпадают</p>}
         {error && <p className="error">{error}</p>}
         <button disabled={pending || mismatch}>Сохранить</button>

@@ -308,6 +308,54 @@ select:focus {
   cursor: default;
 }
 
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.password-field {
+  position: relative;
+  display: flex;
+}
+
+.password-field input {
+  flex: 1;
+  min-width: 0;
+  padding-right: 44px;
+}
+
+/* Свой глазок вместо встроенного в Edge — иначе их два. */
+.password-field input::-ms-reveal {
+  display: none;
+}
+
+.password-field .password-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-radius: 10px;
+}
+
+.password-field .password-toggle:hover {
+  color: var(--text);
+}
+
+.password-field .password-toggle:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -4px;
+}
+
 .hint {
   margin: 0;
   font-size: 0.9rem;
