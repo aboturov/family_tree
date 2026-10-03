@@ -6,6 +6,7 @@ import { PersonForm } from './editing/PersonForm.tsx';
 import { DocumentChips, DocumentIcon, DocumentsTab } from './documents/DocumentList.tsx';
 import { PhotosTab } from './editing/Photos.tsx';
 import { MergeForm } from './editing/Relations.tsx';
+import { LinkedText } from './LongText.tsx';
 import { Modal } from './Modal.tsx';
 import { DangerActions, useDeleteEvent } from './PersonPage.tsx';
 import {
@@ -122,7 +123,13 @@ export function PersonPanel({
           )
         }
       >
-        {person.bio ? <p className="bio">{person.bio}</p> : <p className="muted">Пока не заполнена.</p>}
+        {person.bio ? (
+          <p className="bio">
+            <LinkedText text={person.bio} />
+          </p>
+        ) : (
+          <p className="muted">Пока не заполнена.</p>
+        )}
       </PanelSection>
     </div>
   );
@@ -341,7 +348,9 @@ function EventsSection({ person, index }: { person: Person; index: TreeIndex }) 
                   {item.event.note && (
                     <div>
                       <div className="plate-label">Комментарий</div>
-                      {item.event.note}
+                      <div className="long-text">
+                        <LinkedText text={item.event.note} />
+                      </div>
                     </div>
                   )}
                   {item.event.documents?.length ? (

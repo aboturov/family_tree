@@ -7,6 +7,7 @@ import { EventDialog, PencilIcon, TrashIcon } from './editing/EventDialog.tsx';
 import { PersonForm } from './editing/PersonForm.tsx';
 import { PhotosTab } from './editing/Photos.tsx';
 import { MergeForm } from './editing/Relations.tsx';
+import { ClampedText, LinkedText } from './LongText.tsx';
 import { Modal } from './Modal.tsx';
 import {
   AddRelativeDialog,
@@ -175,7 +176,13 @@ function PersonCard({ person, index, actions }: { person: Person; index: TreeInd
       {tab === 'photos' && <PhotosTab person={person} />}
       {tab === 'documents' && <DocumentsTab person={person} index={index} />}
       {tab === 'bio' &&
-        (person.bio ? <p className="bio">{person.bio}</p> : <p className="muted">Биография пока не заполнена.</p>)}
+        (person.bio ? (
+          <p className="bio">
+            <LinkedText text={person.bio} />
+          </p>
+        ) : (
+          <p className="muted">Биография пока не заполнена.</p>
+        ))}
     </>
   );
 }
@@ -300,7 +307,6 @@ function EventsTable({ person, index }: { person: Person; index: TreeIndex }) {
             <span>Дата</span>
             <span>Участники</span>
             <span>Место</span>
-            <span>Комментарий</span>
           </div>
           {items.map((item) => (
             <div className="event-row" key={item.key}>
@@ -310,34 +316,30 @@ function EventsTable({ person, index }: { person: Person; index: TreeIndex }) {
                 </span>
                 <em className="ev-date">{eventDate(item.event)}</em>
               </div>
-              <div className="ev-cell">
-                {item.participants.length > 0 && (
-                  <>
-                    <span className="ev-label">Участники</span>
-                    {item.participants.map((p) => (
-                      <div key={`${p.role}${p.id}`}>
-                        {p.role}: <PersonLink id={p.id}>{displayName(index.persons.get(p.id)!)}</PersonLink>
-                      </div>
-                    ))}
-                  </>
-                )}
-              </div>
-              <div className="ev-cell">
-                {item.event.place && (
-                  <>
-                    <span className="ev-label">Место</span>
-                    {placeFull(item.event.place.name)}
-                  </>
-                )}
-              </div>
-              <div className="ev-cell">
-                {item.event.note && (
-                  <>
-                    <span className="ev-label">Комментарий</span>
-                    {item.event.note}
-                  </>
-                )}
-              </div>
+              {item.participants.length > 0 && (
+                <div className="ev-cell ev-participants">
+                  <span className="ev-label">Участники</span>
+                  {item.participants.map((p) => (
+                    <div key={`${p.role}${p.id}`}>
+                      {p.role}: <PersonLink id={p.id}>{displayName(index.persons.get(p.id)!)}</PersonLink>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {item.event.place && (
+                <div className="ev-cell ev-place">
+                  <span className="ev-label">Место</span>
+                  {placeFull(item.event.place.name)}
+                </div>
+              )}
+              {/* Комментарий — не колонкой, а под участниками и местом на их ширину: длинный
+                  текст в узкой колонке вытягивал строку на экран. */}
+              {item.event.note && (
+                <div className="ev-cell ev-note">
+                  <span className="ev-label">Комментарий</span>
+                  <ClampedText text={item.event.note} />
+                </div>
+              )}
               {canEdit && (
                 <div className="ev-actions">
                   <button className="square-button" onClick={() => setDialog({ item })} aria-label="Изменить событие">

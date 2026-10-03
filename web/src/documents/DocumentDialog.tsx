@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { api, ApiError, scanUrl, type DocumentInput, type DocumentView } from '../api.ts';
 import { useEditing } from '../editing/EditingContext.ts';
+import { LinkedText } from '../LongText.tsx';
 import { Modal } from '../Modal.tsx';
 import { eventDate } from '../personShared.tsx';
 import { Link, personPath } from '../router.ts';
@@ -230,13 +231,17 @@ function DocumentView({
         {d.transcription && (
           <section>
             <h3>Расшифровка</h3>
-            <p className="doc-text">{d.transcription}</p>
+            <p className="doc-text">
+              <LinkedText text={d.transcription} />
+            </p>
           </section>
         )}
         {d.note && (
           <section>
             <h3>Заметки</h3>
-            <p className="doc-text">{d.note}</p>
+            <p className="doc-text">
+              <LinkedText text={d.note} />
+            </p>
           </section>
         )}
         {!people.length && !d.transcription && <p className="muted small">Людей и расшифровки пока нет.</p>}
