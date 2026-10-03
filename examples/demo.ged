@@ -75,7 +75,7 @@
 2 _MARNM Соколова
 1 SEX F
 1 BIRT
-2 DATE 1883
+2 DATE @#DJULIAN@ 12 MAR 1883
 2 PLAC Тверская область, Старицкий район, село Заречье
 3 MAP
 4 LATI N57.0655

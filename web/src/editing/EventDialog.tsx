@@ -11,7 +11,17 @@ import {
   type TreeEvent,
   type TreeIndex,
 } from '../tree/model.ts';
-import { dateProblem, DateFields, joinDate, parseYearless, splitDate, usePlaceSuggestions, yearlessText } from './dateFields.tsx';
+import {
+  dateProblem,
+  DateFields,
+  isOldStyleEra,
+  joinDate,
+  parseYearless,
+  splitDate,
+  usePlaceSuggestions,
+  WHEN,
+  yearlessText,
+} from './dateFields.tsx';
 import { useEditing } from './EditingContext.ts';
 import { eventTypeGroups, FAMILY_EVENT_OPTIONS, OTHER, optionFor, PERSON_EVENT_OPTIONS } from './eventTypes.ts';
 
@@ -19,14 +29,6 @@ import { eventTypeGroups, FAMILY_EVENT_OPTIONS, OTHER, optionFor, PERSON_EVENT_O
 // «чьё событие»), дальше «Когда», дата, комментарий и место под ссылкой.
 
 export type EventOwner = { kind: 'person' | 'family'; id: number; version: number };
-
-const WHEN = [
-  ['exact', 'Дата'],
-  ['about', 'Около'],
-  ['before', 'До'],
-  ['after', 'После'],
-  ['between', 'Между'],
-] as const;
 
 const FAMILY_VALUES = new Set(FAMILY_EVENT_OPTIONS.map((o) => o.value));
 
@@ -99,6 +101,7 @@ export function EventDialog({
   const yearless = !event?.date && event?.dateText ? parseYearless(event.dateText) : null;
   const [from, setFrom] = useState(yearless ?? splitDate(event?.date?.value));
   const [to, setTo] = useState(splitDate(event?.date?.valueTo));
+  const [julian, setJulian] = useState(event?.date?.calendar === 'julian');
   const [familyId, setFamilyId] = useState<number | null>(
     owner?.kind === 'family' ? owner.id : (presetFamilyId ?? marriages[0]?.family.id ?? null),
   );
@@ -142,7 +145,9 @@ export function EventDialog({
     const input: EventInput = {
       type: isOther ? 'custom' : chosen!.type,
       customType: isOther ? customName : chosen!.customType,
-      date: value ? { modifier: when, value, ...(valueTo ? { valueTo } : {}) } : null,
+      date: value
+        ? { modifier: when, value, ...(valueTo ? { valueTo } : {}), ...(julian ? { calendar: 'julian' as const } : {}) }
+        : null,
       dateText: dateText ?? '',
       place: placeOpen ? place : '',
       note,
@@ -240,6 +245,12 @@ export function EventDialog({
               <div className="date-parts">
                 <DateFields value={to} onChange={setTo} />
               </div>
+            )}
+            {(julian || isOldStyleEra(from.year)) && (
+              <label className="choice">
+                <input type="checkbox" checked={julian} onChange={(e) => setJulian(e.target.checked)} />
+                По старому стилю (как в метрике)
+              </label>
             )}
             {event?.dateText && !yearless && <p className="muted small">В выгрузке было: «{event.dateText}»</p>}
 

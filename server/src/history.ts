@@ -1,4 +1,6 @@
 import type { Db } from './db.ts';
+import { detachDocuments, familyEventIds, personEventIds, restoreDocumentLinks, type DocumentLinks } from './documentLinks.ts';
+import { DOCUMENT_COLUMNS, restoreDocumentFiles, trashDocumentFiles } from './documents.ts';
 import { EditError } from './editing.ts';
 import { audit, recordChange, type AuditEntity } from './journal.ts';
 import { restoreMediaFiles, trashMediaFiles } from './media.ts';
@@ -21,6 +23,12 @@ const UNDOABLE = new Set([
   'media.update',
   'media.delete',
   'avatar.set',
+  'document.add',
+  'document.update',
+  'document.delete',
+  'document.file.add',
+  'document.file.update',
+  'document.file.delete',
 ]);
 
 export type HistoryItem = {
@@ -84,14 +92,20 @@ function toItem(db: Db, row: ChangeRow): HistoryItem {
   };
 }
 
-/** Трогал ли кто-то те же записи после этой правки (не считая отменённых правок и самих отмен). */
+/**
+ * Трогал ли кто-то те же записи после этой правки (не считая отменённых правок и самих отмен).
+ * Скан — часть документа: загрузили скан — значит, документ уже тронули.
+ */
 function laterConflict(db: Db, changeId: number): boolean {
   const hit = db
     .prepare(
       `SELECT 1 FROM audit_log a JOIN changes c ON c.id = a.change_id
        WHERE a.id > (SELECT max(id) FROM audit_log WHERE change_id = ?1)
          AND c.undone_by IS NULL AND c.action != 'undo' AND a.entity != 'place'
-         AND EXISTS (SELECT 1 FROM audit_log b WHERE b.change_id = ?1 AND b.entity = a.entity AND b.entity_id = a.entity_id)
+         AND (EXISTS (SELECT 1 FROM audit_log b WHERE b.change_id = ?1 AND b.entity = a.entity AND b.entity_id = a.entity_id)
+           OR a.entity = 'document_file' AND EXISTS (
+             SELECT 1 FROM audit_log b WHERE b.change_id = ?1 AND b.entity = 'document'
+               AND b.entity_id = json_extract(coalesce(a.after, a.before), '$.document_id')))
        LIMIT 1`,
     )
     .get(changeId);
@@ -132,6 +146,7 @@ const EVENT_COLUMNS = [
   'date_modifier',
   'date_value',
   'date_value_to',
+  'date_calendar',
   'date_text',
   'place_id',
   'note',
@@ -142,6 +157,8 @@ const TABLES: Record<Exclude<AuditEntity, 'place'>, string> = {
   family: 'families',
   event: 'events',
   media: 'media',
+  document: 'documents',
+  document_file: 'document_files',
 };
 
 function insertRow(db: Db, table: string, row: Record<string, unknown>) {
@@ -178,7 +195,9 @@ function restoreFamilyLinks(db: Db, id: number, snap: FamilySnapshot) {
   );
 }
 
-type Files = { restore: number[]; trash: number[] };
+// Файлы фото и сканов документов: что вернуть из корзины и что убрать в неё после отката.
+type FileRef = { kind: 'media' | 'document'; id: number };
+type Files = { restore: FileRef[]; trash: FileRef[] };
 
 // Событие поменялось — у его владельца новая версия, чтобы открытые формы не затёрли откат.
 function bumpEventOwner(db: Db, event: Record<string, unknown> | undefined) {
@@ -196,9 +215,16 @@ function revertRow(db: Db, userId: number, row: AuditRow, files: Files) {
   }
 
   if (row.action === 'create') {
+    // Связи с документами каскад снял бы молча — снимаем их записью в журнале.
+    if (row.entity === 'person') {
+      detachDocuments(db, userId, { persons: [row.entity_id], events: personEventIds(db, row.entity_id) });
+    }
+    if (row.entity === 'event') detachDocuments(db, userId, { events: [row.entity_id] });
+    if (row.entity === 'family') detachDocuments(db, userId, { events: familyEventIds(db, row.entity_id) });
     const snapshot = db.prepare(`SELECT * FROM ${table} WHERE id = ?`).get(row.entity_id);
     db.prepare(`DELETE FROM ${table} WHERE id = ?`).run(row.entity_id);
-    if (row.entity === 'media') files.trash.push(row.entity_id);
+    if (row.entity === 'media') files.trash.push({ kind: 'media', id: row.entity_id });
+    if (row.entity === 'document_file') files.trash.push({ kind: 'document', id: row.entity_id });
     audit(db, userId, row.entity, row.entity_id, 'delete', snapshot ?? null, null);
     return;
   }
@@ -207,6 +233,12 @@ function revertRow(db: Db, userId: number, row: AuditRow, files: Files) {
     if (row.entity === 'person') restoreColumns(db, 'persons', row.entity_id, before!, PERSON_COLUMNS);
     if (row.entity === 'event') restoreColumns(db, 'events', row.entity_id, before!, EVENT_COLUMNS);
     if (row.entity === 'media') restoreColumns(db, 'media', row.entity_id, before!, ['caption']);
+    if (row.entity === 'document_file') restoreColumns(db, 'document_files', row.entity_id, before!, ['frame']);
+    if (row.entity === 'document') {
+      restoreColumns(db, 'documents', row.entity_id, before!, [...DOCUMENT_COLUMNS]);
+      if ('persons' in before! && 'events' in before!) restoreDocumentLinks(db, row.entity_id, before as unknown as DocumentLinks);
+      db.prepare('UPDATE documents SET version = version + 1 WHERE id = ?').run(row.entity_id);
+    }
     if (row.entity === 'family') restoreFamilyLinks(db, row.entity_id, before as unknown as FamilySnapshot);
     if (row.entity === 'person' || row.entity === 'family') {
       db.prepare(`UPDATE ${table} SET version = version + 1 WHERE id = ?`).run(row.entity_id);
@@ -216,9 +248,14 @@ function revertRow(db: Db, userId: number, row: AuditRow, files: Files) {
   }
 
   // delete — возвращаем из снимка
-  if (row.entity === 'event' || row.entity === 'media') {
+  if (row.entity === 'event' || row.entity === 'media' || row.entity === 'document_file') {
     insertRow(db, table, before!);
-    if (row.entity === 'media') files.restore.push(row.entity_id);
+    if (row.entity === 'media') files.restore.push({ kind: 'media', id: row.entity_id });
+    if (row.entity === 'document_file') files.restore.push({ kind: 'document', id: row.entity_id });
+  } else if (row.entity === 'document') {
+    const { persons, events, ...document } = before as Record<string, unknown> & DocumentLinks;
+    insertRow(db, 'documents', { ...document, version: Number(document.version ?? 1) + 1 });
+    restoreDocumentLinks(db, row.entity_id, { persons, events });
   } else if (row.entity === 'family') {
     const snap = before as unknown as FamilySnapshot;
     db.prepare('INSERT INTO families (id, partner1_id, partner2_id) VALUES (?, ?, ?)').run(
@@ -245,7 +282,7 @@ function revertRow(db: Db, userId: number, row: AuditRow, files: Files) {
     for (const media of snap.media) {
       if (typeof media === 'number') continue; // старый формат снимка — без записи фото
       insertRow(db, 'media', media);
-      files.restore.push(media.id as number);
+      files.restore.push({ kind: 'media', id: media.id as number });
     }
     // Связи — с семьями, которые остались; удалённые вернулись из своих строк журнала раньше.
     for (const family of snap.families) {
@@ -307,6 +344,6 @@ export function undoChange(db: Db, mediaDir: string, user: { id: number; role: s
     },
     () => ({ of: row.id, action: row.action, details: JSON.parse(row.details) }),
   );
-  for (const id of files.trash) trashMediaFiles(mediaDir, id);
-  for (const id of files.restore) restoreMediaFiles(mediaDir, id);
+  for (const { kind, id } of files.trash) (kind === 'media' ? trashMediaFiles : trashDocumentFiles)(mediaDir, id);
+  for (const { kind, id } of files.restore) (kind === 'media' ? restoreMediaFiles : restoreDocumentFiles)(mediaDir, id);
 }

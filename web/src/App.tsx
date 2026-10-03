@@ -1,6 +1,9 @@
 import { lazy, Suspense, useEffect, useId, useMemo, useState, type FormEvent, type InputHTMLAttributes } from 'react';
-import { api, ApiError, type User } from './api.ts';
+import { api, ApiError, type DocumentInput, type DocumentView, type User } from './api.ts';
 import { ChunkErrorBoundary } from './ChunkErrorBoundary.tsx';
+import { DocumentDialog } from './documents/DocumentDialog.tsx';
+import { DocumentsProvider, type Documents } from './documents/DocumentsContext.ts';
+import { DocumentsPage } from './documents/DocumentsPage.tsx';
 import { EditingProvider } from './editing/EditingContext.ts';
 import { HistoryPage } from './HistoryPage.tsx';
 import { PeoplePage } from './PeoplePage.tsx';
@@ -181,19 +184,40 @@ function HomePage({ user, onLogout }: { user: User; onLogout: () => void }) {
   const [tree, setTree] = useState<Tree>();
   const [error, setError] = useState<string>();
   const index = useMemo(() => tree && indexTree(tree), [tree]);
+  const [documents, setDocuments] = useState<Map<number, DocumentView>>();
+  const [documentsError, setDocumentsError] = useState<string>();
+  // Открытое окно документа: существующий или новый (с заготовкой).
+  const [opened, setOpened] = useState<{ id: number } | { id: null; preset?: Partial<DocumentInput> } | null>(null);
 
+  const loadDocuments = () =>
+    api.documents().then(({ documents }) => {
+      setDocuments(new Map(documents.map((d) => [d.id, d])));
+      setDocumentsError(undefined);
+    });
   useEffect(() => {
     api
       .tree()
       .then(setTree)
       .catch(() => setError('Не удалось загрузить дерево'));
+    loadDocuments().catch(() => setDocumentsError('Не удалось загрузить документы'));
   }, []);
+  // Правка людей и событий меняет и документы (связи снимаются вместе с удалёнными), поэтому
+  // после любой правки обновляем и то, и другое.
   const editing = useMemo(
     () => ({
       canEdit: user.role === 'admin' || user.role === 'editor',
-      reload: () => api.tree().then(setTree),
+      reload: () => Promise.all([api.tree().then(setTree), loadDocuments()]).then(() => {}),
     }),
     [user.role],
+  );
+  const documentsValue = useMemo<Documents>(
+    () => ({
+      byId: documents,
+      error: documentsError,
+      open: (id) => setOpened({ id }),
+      create: (preset) => setOpened({ id: null, preset }),
+    }),
+    [documents, documentsError],
   );
 
   const logout = async () => {
@@ -208,7 +232,9 @@ function HomePage({ user, onLogout }: { user: User; onLogout: () => void }) {
       ? 'people'
       : location.pathname === '/history'
         ? 'history'
-        : 'tree';
+        : location.pathname === '/documents'
+          ? 'documents'
+          : 'tree';
 
   let content;
   if (error) content = <p className="placeholder">{error}</p>;
@@ -216,6 +242,7 @@ function HomePage({ user, onLogout }: { user: User; onLogout: () => void }) {
   else if (page === 'person')
     content = <PersonPage personId={Number(personMatch![1])} index={index} meId={user.personId} />;
   else if (page === 'people') content = <PeoplePage tree={tree} />;
+  else if (page === 'documents') content = <DocumentsPage index={index} />;
   else if (page === 'history') {
     const person = Number(location.searchParams.get('person')) || undefined;
     content = <HistoryPage key={person} index={index} user={user} personId={person} />;
@@ -242,6 +269,9 @@ function HomePage({ user, onLogout }: { user: User; onLogout: () => void }) {
           <Link to="/people" className={page === 'people' ? 'active' : ''}>
             Люди
           </Link>
+          <Link to="/documents" className={page === 'documents' ? 'active' : ''}>
+            Документы
+          </Link>
           <Link to="/history" className={page === 'history' ? 'active' : ''}>
             История
           </Link>
@@ -254,7 +284,22 @@ function HomePage({ user, onLogout }: { user: User; onLogout: () => void }) {
         </span>
       </header>
       <div className="app-main">
-        <EditingProvider value={editing}>{content}</EditingProvider>
+        <EditingProvider value={editing}>
+          <DocumentsProvider value={documentsValue}>
+            {content}
+            {opened && index && documents && (opened.id === null || documents.has(opened.id)) && (
+              <DocumentDialog
+                key={opened.id ?? 'new'}
+                document={opened.id === null ? undefined : documents.get(opened.id)}
+                preset={opened.id === null ? opened.preset : undefined}
+                index={index}
+                all={[...documents.values()]}
+                onClose={() => setOpened(null)}
+                onCreated={(id) => setOpened({ id })}
+              />
+            )}
+          </DocumentsProvider>
+        </EditingProvider>
       </div>
     </div>
   );

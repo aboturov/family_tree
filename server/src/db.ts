@@ -210,6 +210,98 @@ const migrations: string[] = [
     WHERE is_deceased = 1 AND NOT EXISTS (SELECT 1 FROM events WHERE person_id = p.id AND type = 'death');
   ALTER TABLE persons DROP COLUMN is_deceased;
   `,
+  `
+  -- Дата по старому стилю (юлианский календарь, как @#DJULIAN@ в GEDCOM): метрики до 1918 года.
+  -- Храним как записано, без пересчёта, — отметка только говорит, как читать дату.
+  ALTER TABLE events ADD COLUMN date_calendar TEXT NOT NULL DEFAULT 'gregorian'
+    CHECK (date_calendar IN ('gregorian', 'julian'));
+  `,
+  `
+  -- Документы: архивные записи и семейные бумаги. Карточка — шифр, дата, расшифровка; сканы —
+  -- файлы в <DATA_DIR>/media/documents. С людьми и событиями — связи «многие ко многим»: в одной
+  -- метрике и ребёнок, и родители. Скана может ещё не быть (копию заказали), людей — тоже
+  -- (родство не подтверждено).
+  CREATE TABLE documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    -- Ключ из манифеста пакетного импорта: повторный импорт не создаёт дублей.
+    source_uid TEXT UNIQUE,
+    -- Тип и роли проверяет код (documents.ts): новый тип не требует пересборки таблицы.
+    type TEXT NOT NULL,
+    title TEXT NOT NULL DEFAULT '',
+    -- Дата составления — не дата события: книги ЗАГС восстанавливали годы спустя.
+    date_modifier TEXT CHECK (date_modifier IN ('exact', 'about', 'estimated', 'calculated', 'before', 'after', 'between')),
+    date_value TEXT,
+    date_value_to TEXT,
+    date_calendar TEXT NOT NULL DEFAULT 'gregorian' CHECK (date_calendar IN ('gregorian', 'julian')),
+    -- Где оригинал: архив и шифр. Всё текстом: фонд «Р-100», опись «2а», лист «12об.–13».
+    archive TEXT NOT NULL DEFAULT '',
+    fond TEXT NOT NULL DEFAULT '',
+    opis TEXT NOT NULL DEFAULT '',
+    delo TEXT NOT NULL DEFAULT '',
+    sheets TEXT NOT NULL DEFAULT '',
+    -- Ссылка на дело в онлайн-архиве; номер кадра — у каждого файла.
+    url TEXT NOT NULL DEFAULT '',
+    transcription TEXT NOT NULL DEFAULT '',
+    note TEXT NOT NULL DEFAULT '',
+    version INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+  );
+
+  -- Сканы по порядку: <id>.jpg — оригинал без пересжатия (только без EXIF), <id>-thumb.jpg.
+  CREATE TABLE document_files (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    document_id INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    position INTEGER NOT NULL DEFAULT 0,
+    -- Номер кадра в онлайн-архиве: он не совпадает с номером листа.
+    frame INTEGER,
+    width INTEGER NOT NULL,
+    height INTEGER NOT NULL,
+    bytes INTEGER NOT NULL,
+    -- Один кадр бывает нужен двум документам: по хешу предупреждаем, но не запрещаем.
+    sha256 TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+  );
+  CREATE INDEX document_files_document ON document_files(document_id);
+  CREATE INDEX document_files_sha256 ON document_files(sha256);
+
+  CREATE TABLE document_persons (
+    document_id INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    person_id INTEGER NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
+    role TEXT NOT NULL,
+    position INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (document_id, person_id)
+  );
+  CREATE INDEX document_persons_person ON document_persons(person_id);
+
+  -- Какие события документ подтверждает.
+  CREATE TABLE document_events (
+    document_id INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    PRIMARY KEY (document_id, event_id)
+  );
+  CREATE INDEX document_events_event ON document_events(event_id);
+
+  -- В журнале у документа и его файлов свои записи: откат правки, корзина файлов.
+  ALTER TABLE audit_log RENAME TO audit_log_old;
+  CREATE TABLE audit_log (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    at TEXT NOT NULL DEFAULT (datetime('now')),
+    entity TEXT NOT NULL
+      CHECK (entity IN ('person', 'family', 'event', 'place', 'media', 'document', 'document_file')),
+    entity_id INTEGER NOT NULL,
+    action TEXT NOT NULL CHECK (action IN ('create', 'update', 'delete')),
+    before TEXT,
+    after TEXT,
+    change_id INTEGER REFERENCES changes(id)
+  );
+  INSERT INTO audit_log SELECT * FROM audit_log_old;
+  DROP TABLE audit_log_old;
+  CREATE INDEX audit_log_entity ON audit_log(entity, entity_id);
+  CREATE INDEX audit_log_change ON audit_log(change_id);
+  `,
 ];
 
 export function openDb(file: string): Db {
@@ -220,15 +312,16 @@ export function openDb(file: string): Db {
   return db;
 }
 
-function migrate(db: Db) {
+/** Доводит базу до версии `target` (по умолчанию — последней); тесты миграций берут старую. */
+export function migrate(db: Db, target = migrations.length) {
   const { user_version: current } = db.prepare('PRAGMA user_version').get() as { user_version: number };
-  if (current >= migrations.length) return;
+  if (current >= target) return;
   // Пересборка таблицы (новая, копия, DROP старой) при включённых внешних ключах обнулила бы
   // ссылки на неё — например, аватарки на media. Внутри транзакции ключи не выключить, поэтому
   // выключаем на время миграций, а целостность проверяем перед каждым COMMIT.
   db.exec('PRAGMA foreign_keys = OFF');
   try {
-    for (let version = current; version < migrations.length; version++) {
+    for (let version = current; version < target; version++) {
       db.exec('BEGIN');
       try {
         db.exec(migrations[version]);

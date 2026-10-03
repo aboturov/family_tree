@@ -207,8 +207,9 @@ class Importer {
 
     this.db
       .prepare(
-        `INSERT INTO events (person_id, family_id, type, custom_type, date_modifier, date_value, date_value_to, date_text, place_id, note)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO events (person_id, family_id, type, custom_type, date_modifier, date_value, date_value_to,
+           date_calendar, date_text, place_id, note)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         owner.personId ?? null,
@@ -218,6 +219,7 @@ class Importer {
         date?.modifier ?? null,
         date?.value ?? null,
         date?.valueTo ?? null,
+        date?.calendar ?? 'gregorian',
         date ? '' : dateText,
         placeNode ? this.placeId(placeNode) : null,
         note,

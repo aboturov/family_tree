@@ -2250,3 +2250,359 @@ label.choice {
     box-shadow: 0 -8px 24px rgb(0 0 0 / 12%);
   }
 }
+
+/* --- Документы --- */
+
+.page-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doc-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 8px;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.doc-row:hover {
+  border-color: var(--ring);
+}
+
+.doc-thumb {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  background: var(--tree-bg);
+  border-radius: 8px;
+}
+
+.doc-thumb-empty {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.doc-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.doc-row-text > * {
+  overflow-wrap: anywhere;
+}
+
+.doc-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  vertical-align: middle;
+}
+
+.doc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 0;
+  border-radius: 6px;
+}
+
+.doc-chip.named {
+  padding: 2px 8px;
+  text-align: left;
+}
+
+/* Длинное название документа переносится, а не уезжает за край окна. */
+.doc-heading {
+  min-width: 0;
+}
+
+.modal-head .doc-heading strong {
+  white-space: normal;
+}
+
+/* Окно документа: скан слева, сведения справа; на узком экране — одно под другим. */
+.doc-view {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 24px;
+}
+
+.doc-scans,
+.doc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.doc-info h3 {
+  margin: 4px 0 6px;
+  font-size: 1rem;
+}
+
+.doc-info section {
+  min-width: 0;
+}
+
+.doc-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  margin: 0;
+}
+
+.doc-facts dt {
+  color: var(--muted);
+}
+
+.doc-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.doc-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.doc-no-scan {
+  padding: 32px 16px;
+  text-align: center;
+  background: var(--tree-bg);
+  border-radius: 10px;
+}
+
+.doc-pages {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.doc-page {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  overflow: hidden;
+  background: var(--tree-bg);
+  border: 2px solid transparent;
+  border-radius: 8px;
+}
+
+.doc-page.active {
+  border-color: var(--accent);
+}
+
+.doc-page img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.doc-upload,
+.doc-scan-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+label.doc-frame {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.doc-frame input {
+  width: 90px;
+  padding: 6px 10px;
+}
+
+.scan-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scan-stage {
+  position: relative;
+  min-height: 260px;
+  max-height: min(68vh, 640px);
+  overflow: hidden;
+  cursor: zoom-in;
+  background: var(--tree-bg);
+  border-radius: 10px;
+  touch-action: none;
+  user-select: none;
+}
+
+.scan-stage.zoomed {
+  cursor: grab;
+}
+
+.scan-stage.zoomed:active {
+  cursor: grabbing;
+}
+
+.scan-image {
+  position: absolute;
+  max-width: none;
+  pointer-events: none;
+}
+
+.scan-loading {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  padding: 2px 8px;
+  color: var(--muted);
+  background: var(--surface);
+  border-radius: 6px;
+}
+
+.scan-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.scan-tools .square-button {
+  font-size: 1.2rem;
+}
+
+.scan-tools .square-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.scan-percent {
+  min-width: 3.5em;
+  text-align: center;
+}
+
+/* Форма документа. */
+.doc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.doc-form fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.doc-form legend {
+  padding: 0 6px;
+  color: var(--muted);
+}
+
+.doc-form textarea {
+  font: inherit;
+  color: var(--text);
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  resize: vertical;
+}
+
+.doc-form-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.doc-form-when {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+}
+
+.doc-form .date-parts input,
+.doc-form .date-parts select {
+  min-width: 0;
+}
+
+.doc-form-shelfmark {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.doc-form-shelfmark input {
+  min-width: 0;
+}
+
+.doc-form-people li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.doc-form-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.doc-form-add {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (max-width: 720px) {
+  .doc-view,
+  .doc-form-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .doc-form-shelfmark {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .doc-form-when {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.documents-page .people-filters select {
+  max-width: 100%;
+}

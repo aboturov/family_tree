@@ -48,7 +48,8 @@ export const childValue = (node: GedNode, tag: string) => child(node, tag)?.valu
 // --- Даты ---
 
 export type DateModifier = 'exact' | 'about' | 'estimated' | 'calculated' | 'before' | 'after' | 'between';
-export type ParsedDate = { modifier: DateModifier; value: string; valueTo?: string };
+/** Старый стиль — `calendar: 'julian'`; новый (григорианский) не пишем. */
+export type ParsedDate = { modifier: DateModifier; value: string; valueTo?: string; calendar?: 'julian' };
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 const PREFIXES: Record<string, DateModifier> = { ABT: 'about', EST: 'estimated', CAL: 'calculated', BEF: 'before', AFT: 'after' };
@@ -72,21 +73,28 @@ function parseSimpleDate(text: string): string | undefined {
   return `${y}-${m}-${String(d).padStart(2, '0')}`;
 }
 
+const CALENDAR = /@#D([^@]+)@/g;
+
 export function parseGedcomDate(text: string): ParsedDate | undefined {
-  const upper = text.trim().toUpperCase();
+  // Календарь — перед каждой датой: «@#DJULIAN@ 12 MAR 1885», «BET @#DJULIAN@ 1885 AND @#DJULIAN@ 1886».
+  // Понимаем старый и новый стиль; разные календари в одном периоде не разбираем.
+  const calendars = new Set([...text.toUpperCase().matchAll(CALENDAR)].map((m) => m[1].trim()));
+  if ([...calendars].some((c) => c !== 'JULIAN' && c !== 'GREGORIAN') || calendars.size > 1) return undefined;
+  const calendar = calendars.has('JULIAN') ? { calendar: 'julian' as const } : {};
+  const upper = text.toUpperCase().replace(CALENDAR, ' ').replace(/\s+/g, ' ').trim();
   if (!upper) return undefined;
 
   const range = /^(?:BET|FROM)\s+(.+?)\s+(?:AND|TO)\s+(.+)$/.exec(upper);
   if (range) {
     const value = parseSimpleDate(range[1]);
     const valueTo = parseSimpleDate(range[2]);
-    return value && valueTo ? { modifier: 'between', value, valueTo } : undefined;
+    return value && valueTo ? { modifier: 'between', value, valueTo, ...calendar } : undefined;
   }
 
   const [first, ...rest] = upper.split(/\s+/);
   const modifier = PREFIXES[first];
   const value = parseSimpleDate(modifier ? rest.join(' ') : upper);
-  return value ? { modifier: modifier ?? 'exact', value } : undefined;
+  return value ? { modifier: modifier ?? 'exact', value, ...calendar } : undefined;
 }
 
 // --- Имена ---

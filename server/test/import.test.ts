@@ -213,5 +213,9 @@ describe('демо-дерево (examples/demo.ged)', () => {
     );
     assert.equal(person('I42').givenName, 'Дмитрий');
     assert.equal(person('I13').birthSurname, 'Волкова');
+    const birth = db.prepare("SELECT date_value, date_calendar FROM events WHERE person_id = ? AND type = 'birth'").get(
+      person('I5').id,
+    );
+    assert.deepEqual({ ...birth }, { date_value: '1883-03-12', date_calendar: 'julian' });
   });
 });

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { avatarImageBox, clampCrop } from '../src/avatarGeometry.ts';
-import { cardDates, displayName, placeFull, placeShort, type Person, type TreeEvent } from '../src/tree/model.ts';
+import { cardDates, displayName, formatDate, placeFull, placeShort, type Person, type TreeEvent } from '../src/tree/model.ts';
 
 const event = (type: string, value?: string, modifier: 'exact' | 'about' = 'exact'): TreeEvent => ({
   id: 0,
@@ -17,6 +17,7 @@ const person = (events: TreeEvent[], isDeceased = false): Person => ({
   version: 1,
   avatar: null,
   photos: [],
+  documents: [],
   givenName: '',
   patronymic: '',
   surname: '',
@@ -48,6 +49,16 @@ describe('cardDates', () => {
       '~1900—1965',
     );
     assert.equal(cardDates(person([], true), today), '');
+  });
+});
+
+describe('formatDate', () => {
+  it('старый стиль — отметкой после даты', () => {
+    const birth = event('birth', '1885-03-12');
+    assert.equal(formatDate(birth), '12 марта 1885');
+    assert.equal(formatDate({ ...birth, date: { ...birth.date!, calendar: 'julian' } }), '12 марта 1885 ст.\u00a0ст.');
+    const about = event('birth', '1885-03', 'about');
+    assert.equal(formatDate({ ...about, date: { ...about.date!, calendar: 'julian' } }), 'около март 1885', 'без дня — без отметки');
   });
 });
 

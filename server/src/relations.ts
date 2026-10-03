@@ -1,4 +1,5 @@
 import type { Db } from './db.ts';
+import { detachDocuments, familyEventIds, personEventIds } from './documentLinks.ts';
 import { bumpVersion, EditError, parseEventFields, parseVersion, setDeceased, type PersonFields } from './editing.ts';
 import { audit, inTransaction } from './journal.ts';
 import { mergeFamiliesOfSameCouple, mergeInto } from './merge.ts';
@@ -175,6 +176,7 @@ function dropIfEmpty(db: Db, userId: number, familyId: number) {
   const meaningful = partners === 2 || (partners === 1 && children > 0) || children > 1;
   if (meaningful) return;
   const events = db.prepare('SELECT * FROM events WHERE family_id = ?').all(familyId);
+  detachDocuments(db, userId, { events: familyEventIds(db, familyId) });
   db.prepare('DELETE FROM families WHERE id = ?').run(familyId);
   audit(db, userId, 'family', familyId, 'delete', { ...snap, events }, null);
 }
@@ -273,14 +275,15 @@ function createPerson(db: Db, userId: number, fields: PersonFields): number {
 function addBirth(db: Db, userId: number, personId: number, fields: ReturnType<typeof parseEventFields>) {
   const { id } = db
     .prepare(
-      `INSERT INTO events (person_id, type, date_modifier, date_value, date_value_to, date_text)
-       VALUES (?, 'birth', ?, ?, ?, ?) RETURNING id`,
+      `INSERT INTO events (person_id, type, date_modifier, date_value, date_value_to, date_calendar, date_text)
+       VALUES (?, 'birth', ?, ?, ?, ?, ?) RETURNING id`,
     )
     .get(
       personId,
       fields.date?.modifier ?? null,
       fields.date?.value ?? null,
       fields.date?.valueTo ?? null,
+      fields.date?.calendar ?? 'gregorian',
       fields.dateText,
     ) as { id: number };
   audit(db, userId, 'event', id, 'create', null, { owner: { kind: 'person', id: personId }, ...fields });
@@ -401,6 +404,7 @@ export function deletePerson(db: Db, userId: number, personId: number, expectedV
     ).map((f) => f.id);
     const links = families.map((id) => ({ id, ...snapshot(db, id) }));
 
+    detachDocuments(db, userId, { persons: [personId], events: personEventIds(db, personId) });
     db.prepare('DELETE FROM persons WHERE id = ?').run(personId);
     audit(db, userId, 'person', personId, 'delete', { person, events, families: links, media }, null);
     for (const id of families) {

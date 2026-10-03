@@ -12,6 +12,7 @@ import {
   eventLabel,
   findEvent,
   formatDate,
+  oldStyle,
   otherPartner,
   placeFull,
   type Family,
@@ -97,6 +98,10 @@ const numeric = (value: string) => {
 export function eventDate(event: TreeEvent): string {
   const { date } = event;
   if (!date) return event.dateText || 'Неизвестно';
+  return eventDateValue(date) + oldStyle(event);
+}
+
+function eventDateValue(date: NonNullable<TreeEvent['date']>): string {
   const value = numeric(date.value);
   switch (date.modifier) {
     case 'about':

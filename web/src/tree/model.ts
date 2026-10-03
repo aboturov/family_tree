@@ -6,10 +6,13 @@ export type TreeEvent = {
   id: number;
   type: string;
   customType: string;
-  date: { modifier: DateModifier; value: string; valueTo?: string } | null;
+  /** `calendar` — только у дат по старому стилю. */
+  date: { modifier: DateModifier; value: string; valueTo?: string; calendar?: 'julian' } | null;
   dateText: string;
   place: { name: string; lat: number | null; lon: number | null } | null;
   note: string;
+  /** Документы, которые подтверждают событие (только если есть). */
+  documents?: number[];
 };
 
 export type Photo = { id: number; caption: string; width: number; height: number };
@@ -21,6 +24,8 @@ export type Person = {
   version: number;
   avatar: { mediaId: number; crop: AvatarCrop } | null;
   photos: Photo[];
+  /** Документы, где человек упомянут; сами документы грузятся отдельно (documents/DocumentsContext.ts). */
+  documents: number[];
   givenName: string;
   patronymic: string;
   surname: string;
@@ -97,9 +102,20 @@ function formatPartialDate(value: string): string {
   return year;
 }
 
+/**
+ * Отметка старого стиля после даты: «12 марта 1885 ст. ст.»; «ст. ст.» не разрываем переносом.
+ * У даты без дня отметка ничего не меняет — её не пишем.
+ */
+export const oldStyle = (event: Pick<TreeEvent, 'date'>) =>
+  event.date?.calendar === 'julian' && event.date.value.length === 10 ? ' ст.\u00a0ст.' : '';
+
 export function formatDate(event: TreeEvent): string {
   const { date } = event;
   if (!date) return event.dateText;
+  return formatDateValue(date) + oldStyle(event);
+}
+
+function formatDateValue(date: NonNullable<TreeEvent['date']>): string {
   const value = formatPartialDate(date.value);
   switch (date.modifier) {
     case 'about':
