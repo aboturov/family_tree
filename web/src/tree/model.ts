@@ -11,6 +11,8 @@ export type TreeEvent = {
   dateText: string;
   place: { name: string; lat: number | null; lon: number | null } | null;
   note: string;
+  /** Документы, которые подтверждают событие (только если есть). */
+  documents?: number[];
 };
 
 export type Photo = { id: number; caption: string; width: number; height: number };
@@ -22,6 +24,8 @@ export type Person = {
   version: number;
   avatar: { mediaId: number; crop: AvatarCrop } | null;
   photos: Photo[];
+  /** Документы, где человек упомянут; сами документы грузятся отдельно (documents/DocumentsContext.ts). */
+  documents: number[];
   givenName: string;
   patronymic: string;
   surname: string;

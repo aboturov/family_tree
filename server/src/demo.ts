@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { openDb } from './db.ts';
+import { seedDemoDocuments } from './demoDocuments.ts';
 import { importGedcom, isTreeEmpty } from './import.ts';
 import { findPersonId } from './merge.ts';
 import { createUser, findUserByLogin, setPassword, setUserPerson } from './users.ts';
@@ -25,6 +26,7 @@ if (!findUserByLogin(db, LOGIN)) {
   await setPassword(db, user.id, PASSWORD, { temporary: false });
   setUserPerson(db, user.id, findPersonId(db, DEMO_PERSON) ?? null);
 }
+seedDemoDocuments(db, path.join(dataDir, 'media'), findUserByLogin(db, LOGIN)!.id);
 db.close();
 
 // Сервер читает каталог данных из окружения при загрузке — поэтому импортируем его только сейчас.

@@ -11,7 +11,17 @@ import {
   type TreeEvent,
   type TreeIndex,
 } from '../tree/model.ts';
-import { dateProblem, DateFields, joinDate, parseYearless, splitDate, usePlaceSuggestions, yearlessText } from './dateFields.tsx';
+import {
+  dateProblem,
+  DateFields,
+  isOldStyleEra,
+  joinDate,
+  parseYearless,
+  splitDate,
+  usePlaceSuggestions,
+  WHEN,
+  yearlessText,
+} from './dateFields.tsx';
 import { useEditing } from './EditingContext.ts';
 import { eventTypeGroups, FAMILY_EVENT_OPTIONS, OTHER, optionFor, PERSON_EVENT_OPTIONS } from './eventTypes.ts';
 
@@ -20,18 +30,7 @@ import { eventTypeGroups, FAMILY_EVENT_OPTIONS, OTHER, optionFor, PERSON_EVENT_O
 
 export type EventOwner = { kind: 'person' | 'family'; id: number; version: number };
 
-const WHEN = [
-  ['exact', 'Дата'],
-  ['about', 'Около'],
-  ['before', 'До'],
-  ['after', 'После'],
-  ['between', 'Между'],
-] as const;
-
 const FAMILY_VALUES = new Set(FAMILY_EVENT_OPTIONS.map((o) => o.value));
-
-/** Старый стиль в России — до февраля 1918-го: отметку предлагаем только для таких дат. */
-const isOldStyleEra = (year: string) => year.length === 4 && Number(year) <= 1918;
 
 /** Поле с подписью внутри рамки. */
 function Field({ label, children }: { label: string; children: ReactNode }) {

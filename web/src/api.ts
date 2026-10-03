@@ -1,4 +1,4 @@
-import type { AvatarCrop, Tree } from './tree/model.ts';
+import type { AvatarCrop, Tree, TreeEvent } from './tree/model.ts';
 
 export type User = {
   id: number;
@@ -76,7 +76,56 @@ export const api = {
   deletePhoto: (id: number) => request<{ ok: true }>(`/media/${id}`, {}, 'DELETE'),
   setAvatar: (personId: number, body: { version: number; mediaId: number | null; crop?: AvatarCrop }) =>
     request<{ ok: true }>(`/persons/${personId}/avatar`, body, 'PUT'),
+  documents: () => request<{ documents: DocumentView[] }>('/documents'),
+  addDocument: (body: DocumentInput) => request<{ id: number }>('/documents', body),
+  updateDocument: (id: number, body: DocumentInput & { version: number }) =>
+    request<{ ok: true }>(`/documents/${id}`, body, 'PATCH'),
+  deleteDocument: (id: number, version: number) => request<{ ok: true }>(`/documents/${id}`, { version }, 'DELETE'),
+  uploadScan: async (documentId: number, scan: PreparedScan, frame: number | null) => {
+    const form = new FormData();
+    form.set('file', scan.file, 'scan.jpg');
+    form.set('thumb', scan.thumb, 'thumb.jpg');
+    if (frame !== null) form.set('frame', String(frame));
+    const res = await fetch(`/api/documents/${documentId}/files`, { method: 'POST', body: form });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiError(res.status, data.error ?? `Ошибка ${res.status}`);
+    return data as { id: number; sameScans: { documentId: number; title: string; type: string }[] };
+  },
+  updateScan: (id: number, frame: number | null) => request<{ ok: true }>(`/document-files/${id}`, { frame }, 'PATCH'),
+  deleteScan: (id: number) => request<{ ok: true }>(`/document-files/${id}`, {}, 'DELETE'),
 };
+
+export const scanUrl = (id: number, size: 'original' | 'thumb') => `/api/document-files/${id}/${size}`;
+
+/** Документ целиком — GET /api/documents (server/src/documents.ts). */
+export type DocumentView = {
+  id: number;
+  version: number;
+  type: string;
+  title: string;
+  /** Дата составления документа. */
+  date: TreeEvent['date'];
+  archive: string;
+  fond: string;
+  opis: string;
+  delo: string;
+  sheets: string;
+  url: string;
+  transcription: string;
+  note: string;
+  files: { id: number; frame: number | null; width: number; height: number; bytes: number }[];
+  persons: { id: number; role: string }[];
+  events: number[];
+  createdAt: string;
+};
+
+export type DocumentInput = Pick<
+  DocumentView,
+  'type' | 'title' | 'archive' | 'fond' | 'opis' | 'delo' | 'sheets' | 'url' | 'transcription' | 'note' | 'persons' | 'events'
+> & { date: EventInput['date'] };
+
+/** Скан к загрузке: оригинал (или повёрнутая копия) и миниатюра — см. documents/prepareScan.ts. */
+export type PreparedScan = { file: Blob; thumb: Blob };
 
 // Сервер кеширует фото по адресу на год. Пока id фото переиспользовались, под одним адресом
 // успевало побывать другое фото; ?v=2 сбрасывает такие кеши — адреса с ним всегда верные.

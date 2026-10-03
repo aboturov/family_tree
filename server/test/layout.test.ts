@@ -20,6 +20,7 @@ const person = (id: number, sex: Person['sex']): Person => ({
   version: 1,
   avatar: null,
   photos: [],
+  documents: [],
   givenName: `P${id}`,
   patronymic: '',
   surname: '',

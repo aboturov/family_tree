@@ -17,6 +17,7 @@ const person = (events: TreeEvent[], isDeceased = false): Person => ({
   version: 1,
   avatar: null,
   photos: [],
+  documents: [],
   givenName: '',
   patronymic: '',
   surname: '',

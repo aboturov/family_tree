@@ -21,6 +21,18 @@ const MONTHS = [
 export { dateProblem, emptyDate, joinDate, parseYearless, splitDate, yearlessText, type PartialDate } from './partialDate.ts';
 import type { PartialDate } from './partialDate.ts';
 
+/** Точность даты в формах: события и документа. */
+export const WHEN = [
+  ['exact', 'Дата'],
+  ['about', 'Около'],
+  ['before', 'До'],
+  ['after', 'После'],
+  ['between', 'Между'],
+] as const;
+
+/** Старый стиль в России — до февраля 1918-го: отметку предлагаем только для таких дат. */
+export const isOldStyleEra = (year: string) => year.length === 4 && Number(year) <= 1918;
+
 export function DateFields({ value, onChange }: { value: PartialDate; onChange: (d: PartialDate) => void }) {
   return (
     <>

@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { api } from './api.ts';
 import { Avatar } from './Avatar.tsx';
+import { DocumentChips, DocumentsTab } from './documents/DocumentList.tsx';
 import { useEditing } from './editing/EditingContext.ts';
 import { EventDialog, PencilIcon, TrashIcon } from './editing/EventDialog.tsx';
 import { PersonForm } from './editing/PersonForm.tsx';
@@ -26,7 +27,7 @@ import { Link, treePath } from './router.ts';
 import { displayName, findEvent, formatDate, placeFull, shortDate, type Person, type TreeIndex } from './tree/model.ts';
 
 type Props = { personId: number; index: TreeIndex; meId: number | null };
-type Tab = 'events' | 'relatives' | 'photos' | 'bio';
+type Tab = 'events' | 'relatives' | 'photos' | 'documents' | 'bio';
 
 export function PersonPage({ personId, index, meId }: Props) {
   const person = index.persons.get(personId);
@@ -153,6 +154,7 @@ function PersonCard({ person, index, actions }: { person: Person; index: TreeInd
             ['events', 'События'],
             ['relatives', 'Родственники'],
             ['photos', person.photos.length ? `Фото (${person.photos.length})` : 'Фото'],
+            ['documents', person.documents.length ? `Документы (${person.documents.length})` : 'Документы'],
             ['bio', 'Биография'],
           ] as const
         ).map(([key, label]) => (
@@ -171,6 +173,7 @@ function PersonCard({ person, index, actions }: { person: Person; index: TreeInd
       {tab === 'events' && <EventsTable person={person} index={index} />}
       {tab === 'relatives' && <Relatives person={person} index={index} />}
       {tab === 'photos' && <PhotosTab person={person} />}
+      {tab === 'documents' && <DocumentsTab person={person} index={index} />}
       {tab === 'bio' &&
         (person.bio ? <p className="bio">{person.bio}</p> : <p className="muted">Биография пока не заполнена.</p>)}
     </>
@@ -302,7 +305,9 @@ function EventsTable({ person, index }: { person: Person; index: TreeIndex }) {
           {items.map((item) => (
             <div className="event-row" key={item.key}>
               <div className="ev-head">
-                <span className="ev-type">{item.label}</span>
+                <span className="ev-type">
+                  {item.label} <DocumentChips ids={item.event.documents} />
+                </span>
                 <em className="ev-date">{eventDate(item.event)}</em>
               </div>
               <div className="ev-cell">

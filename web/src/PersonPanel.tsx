@@ -3,6 +3,7 @@ import { Avatar } from './Avatar.tsx';
 import { useEditing } from './editing/EditingContext.ts';
 import { EventDialog, PencilIcon } from './editing/EventDialog.tsx';
 import { PersonForm } from './editing/PersonForm.tsx';
+import { DocumentChips, DocumentIcon, DocumentsTab } from './documents/DocumentList.tsx';
 import { PhotosTab } from './editing/Photos.tsx';
 import { MergeForm } from './editing/Relations.tsx';
 import { Modal } from './Modal.tsx';
@@ -107,6 +108,9 @@ export function PersonPanel({
       <EventsSection person={person} index={index} />
       <PanelSection title={person.photos.length ? `Фото (${person.photos.length})` : 'Фото'}>
         <PhotosTab person={person} />
+      </PanelSection>
+      <PanelSection title={person.documents.length ? `Документы (${person.documents.length})` : 'Документы'}>
+        <DocumentsTab person={person} index={index} />
       </PanelSection>
       <PanelSection
         title="Биография"
@@ -315,6 +319,7 @@ function EventsSection({ person, index }: { person: Person; index: TreeIndex }) 
             <div key={item.key} className={open ? 'plate accordion open' : 'plate accordion'}>
               <button className="accordion-head" onClick={() => setOpenKey(open ? null : item.key)} aria-expanded={open}>
                 <strong>{item.label}</strong> <span className="muted">{eventDate(item.event)}</span>
+                {item.event.documents?.length ? <DocumentIcon size={14} /> : null}
                 <svg className="chevron" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
                   <path fill="currentColor" d="M17.46 9.44a.76.76 0 0 1 0 1.07l-4.78 4.78a1 1 0 0 1-1.41 0L6.49 10.5a.76.76 0 1 1 1.07-1.07L12 13.85l4.4-4.41a.76.76 0 0 1 1.07 0Z" />
                 </svg>
@@ -339,6 +344,12 @@ function EventsSection({ person, index }: { person: Person; index: TreeIndex }) 
                       {item.event.note}
                     </div>
                   )}
+                  {item.event.documents?.length ? (
+                    <div>
+                      <div className="plate-label">Подтверждают документы</div>
+                      <DocumentChips ids={item.event.documents} named />
+                    </div>
+                  ) : null}
                   {canEdit && (
                     <div className="accordion-footer">
                       <button className="link" onClick={() => setDialog({ item })}>
