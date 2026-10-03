@@ -32,9 +32,10 @@ export function DocumentDialog({
   onCreated: (id: number) => void;
 }) {
   const [editing, setEditing] = useState(!document);
+  // Ключ — чтобы после сохранения окно просмотра не считало себя «с несохранённым вводом».
   if (!document || editing) {
     return (
-      <Modal title={document ? `Документ — ${documentName(document)}` : 'Новый документ'} onClose={onClose} wide>
+      <Modal key="edit" title={document ? `Документ — ${documentName(document)}` : 'Новый документ'} onClose={onClose} wide>
         <DocumentForm
           document={document}
           preset={preset}
@@ -49,6 +50,7 @@ export function DocumentDialog({
   const name = documentName(document);
   return (
     <Modal
+      key="view"
       title={name}
       onClose={onClose}
       wide
@@ -153,7 +155,19 @@ function DocumentView({
             <button className="button secondary" onClick={() => input.current?.click()} disabled={!!status}>
               + Добавить скан
             </button>
-            <input ref={input} type="file" accept="image/*" multiple hidden onChange={(e) => upload(e.target.files)} />
+            {/* Выбор файла — не ввод в форму: окно не должно спрашивать о несохранённом при закрытии. */}
+            <input
+              ref={input}
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              onInput={(e) => e.stopPropagation()}
+              onChange={(e) => {
+                e.stopPropagation();
+                upload(e.target.files);
+              }}
+            />
             {status && <span className="muted small">{status}</span>}
           </div>
         )}
