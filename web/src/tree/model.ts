@@ -6,6 +6,8 @@ export type TreeEvent = {
   id: number;
   type: string;
   customType: string;
+  /** Что именно: название награды, звание, профессия. */
+  details: string;
   /** `calendar` — только у дат по старому стилю. */
   date: { modifier: DateModifier; value: string; valueTo?: string; calendar?: 'julian' } | null;
   dateText: string;
@@ -169,6 +171,22 @@ const EVENT_LABELS: Record<string, string> = {
 };
 
 export const eventLabel = (e: TreeEvent) => (e.type === 'custom' ? e.customType || 'Событие' : (EVENT_LABELS[e.type] ?? e.type));
+
+/** «Военная награда — медаль «За отвагу»»: тип и что именно, если указано. */
+export const eventTitle = (e: TreeEvent) => (e.details ? `${eventLabel(e)} — ${e.details}` : eventLabel(e));
+
+const AWARDS = new Set(['Военная награда', 'Награда']);
+
+/** Награды человека — события «Военная награда» и «Награда», по порядку дат. */
+export const awardsOf = (p: Person) => p.events.filter((e) => e.type === 'custom' && AWARDS.has(e.customType));
+
+/** «Орден Красной Звезды (1945)»; пока название не указано — тип события. */
+export function awardTitle(e: TreeEvent): string {
+  const name = e.details || eventLabel(e);
+  if (!e.date) return name;
+  const year = e.date.value.slice(0, 4);
+  return `${name} (${e.date.modifier === 'exact' ? year : `~${year}`})`;
+}
 
 // --- В стиле familio ---
 

@@ -3,7 +3,7 @@ import { api, ApiError, type DocumentInput, type DocumentView } from '../api.ts'
 import { DateFields, dateProblem, isOldStyleEra, joinDate, splitDate, WHEN } from '../editing/dateFields.tsx';
 import { useEditing } from '../editing/EditingContext.ts';
 import { eventDate } from '../personShared.tsx';
-import { displayName, eventLabel, lifeYears, type TreeEvent, type TreeIndex } from '../tree/model.ts';
+import { displayName, eventTitle, lifeYears, type TreeEvent, type TreeIndex } from '../tree/model.ts';
 import { DOCUMENT_ROLES, DOCUMENT_TYPES } from './labels.ts';
 
 // Карточка документа. Обязателен только тип: документ заводят и по одному шифру, а скан, людей
@@ -14,6 +14,7 @@ const TYPE_GROUPS: [string, string[]][] = [
   ['ЗАГС', ['civil_birth', 'civil_marriage', 'civil_death', 'civil_index']],
   ['Переписи и учёт', ['census', 'confession', 'revision', 'household']],
   ['Репрессии', ['investigation', 'rehabilitation']],
+  ['Военные документы', ['award', 'service_record', 'loss_report', 'death_notice', 'military_id']],
   ['Семейные бумаги', ['certificate', 'personal', 'letter']],
   ['Другое', ['database', 'other']],
 ];
@@ -288,7 +289,7 @@ function eventsOf(ids: number[], index: TreeIndex): { event: TreeEvent; label: s
     const person = index.persons.get(id);
     if (!person) continue;
     for (const event of person.events) {
-      options.set(event.id, { event, label: `${eventLabel(event)}, ${eventDate(event)} — ${displayName(person)}` });
+      options.set(event.id, { event, label: `${eventTitle(event)}, ${eventDate(event)} — ${displayName(person)}` });
     }
     for (const family of index.familiesAsPartner.get(id) ?? []) {
       const names = family.partners
@@ -297,7 +298,7 @@ function eventsOf(ids: number[], index: TreeIndex): { event: TreeEvent; label: s
         .map(displayName)
         .join(' и ');
       for (const event of family.events) {
-        const what = event.type === 'marriage' ? 'Бракосочетание' : eventLabel(event);
+        const what = event.type === 'marriage' ? 'Бракосочетание' : eventTitle(event);
         options.set(event.id, { event, label: `${what}, ${eventDate(event)} — ${names}` });
       }
     }

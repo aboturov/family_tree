@@ -7,6 +7,7 @@ const ev = (type: string, value?: string): TreeEvent => ({
   id: 0,
   type,
   customType: '',
+  details: '',
   date: value ? { modifier: 'exact', value } : null,
   dateText: '',
   place: null,

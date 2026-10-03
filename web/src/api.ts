@@ -147,6 +147,8 @@ export type PersonInput = {
 export type EventInput = {
   type: string;
   customType: string;
+  /** Что именно: название награды, звание, профессия. */
+  details: string;
   /** `calendar: 'julian'` — по старому стилю. */
   date: { modifier: string; value: string; valueTo?: string; calendar?: 'julian' } | null;
   /** Дата без года («12 марта») — когда `date` пуста. */

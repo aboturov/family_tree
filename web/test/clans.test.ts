@@ -60,7 +60,7 @@ const joined: Tree = {
 const born = (p: Person, year: number): Person => ({
   ...p,
   events: [
-    { id: p.id, type: 'birth', customType: '', date: { modifier: 'exact', value: String(year) }, dateText: '', place: null, note: '' },
+    { id: p.id, type: 'birth', customType: '', details: '', date: { modifier: 'exact', value: String(year) }, dateText: '', place: null, note: '' },
   ],
 });
 

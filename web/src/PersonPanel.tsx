@@ -11,6 +11,7 @@ import { Modal } from './Modal.tsx';
 import { DangerActions, useDeleteEvent } from './PersonPage.tsx';
 import {
   AddRelativeMenu,
+  Awards,
   eventDate,
   PersonLink,
   relativeItems,
@@ -83,6 +84,7 @@ export function PersonPanel({
           <p className="panel-summary">
             <Summary person={person} />
           </p>
+          <Awards person={person} />
           <div className="pills">
             {onBuild && (
               <button className="pill grey" onClick={onBuild}>
@@ -325,8 +327,11 @@ function EventsSection({ person, index }: { person: Person; index: TreeIndex }) 
           return (
             <div key={item.key} className={open ? 'plate accordion open' : 'plate accordion'}>
               <button className="accordion-head" onClick={() => setOpenKey(open ? null : item.key)} aria-expanded={open}>
-                <strong>{item.label}</strong> <span className="muted">{eventDate(item.event)}</span>
-                {item.event.documents?.length ? <DocumentIcon size={14} /> : null}
+                <span className="accordion-title">
+                  <strong>{item.label}</strong> <span className="muted">{eventDate(item.event)}</span>
+                  {item.event.documents?.length ? <DocumentIcon size={14} /> : null}
+                  {item.event.details && <span className="accordion-details">{item.event.details}</span>}
+                </span>
                 <svg className="chevron" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
                   <path fill="currentColor" d="M17.46 9.44a.76.76 0 0 1 0 1.07l-4.78 4.78a1 1 0 0 1-1.41 0L6.49 10.5a.76.76 0 1 1 1.07-1.07L12 13.85l4.4-4.41a.76.76 0 0 1 1.07 0Z" />
                 </svg>

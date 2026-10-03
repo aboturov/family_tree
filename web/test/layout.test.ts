@@ -177,6 +177,7 @@ const married = (id: number, partners: [number | null, number | null], children:
           id,
           type: 'marriage',
           customType: '',
+          details: '',
           date: { modifier: 'exact', value: date },
           dateText: '',
           place: null,

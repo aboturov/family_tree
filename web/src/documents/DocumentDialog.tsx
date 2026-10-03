@@ -5,7 +5,7 @@ import { LinkedText } from '../LongText.tsx';
 import { Modal } from '../Modal.tsx';
 import { eventDate } from '../personShared.tsx';
 import { Link, personPath } from '../router.ts';
-import { displayName, eventLabel, type TreeEvent, type TreeIndex } from '../tree/model.ts';
+import { displayName, eventTitle, type TreeEvent, type TreeIndex } from '../tree/model.ts';
 import { DocumentForm } from './DocumentForm.tsx';
 import { documentDate, whereKept } from './format.ts';
 import { DOCUMENT_ROLES, DOCUMENT_TYPES, documentName } from './labels.ts';
@@ -222,7 +222,7 @@ function DocumentView({
             <ul className="plain">
               {events.map(({ event, who }) => (
                 <li key={event.id}>
-                  {event.type === 'marriage' ? 'Бракосочетание' : eventLabel(event)}, {eventDate(event)} — {who}
+                  {event.type === 'marriage' ? 'Бракосочетание' : eventTitle(event)}, {eventDate(event)} — {who}
                 </li>
               ))}
             </ul>

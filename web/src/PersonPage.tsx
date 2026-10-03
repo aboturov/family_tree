@@ -13,6 +13,7 @@ import {
   AddRelativeDialog,
   AddRelativeMenu,
   addOptions,
+  Awards,
   errorText,
   eventDate,
   PersonLink,
@@ -109,6 +110,7 @@ function PersonCard({ person, index, actions }: { person: Person; index: TreeInd
               <p className="person-summary">
                 <Summary person={person} />
               </p>
+              <Awards person={person} />
               {person.isUncertain && <p className="badge-line">Данные под вопросом</p>}
               {canEdit && (
                 <p className="edit-links">
@@ -316,14 +318,20 @@ function EventsTable({ person, index }: { person: Person; index: TreeIndex }) {
                 </span>
                 <em className="ev-date">{eventDate(item.event)}</em>
               </div>
-              {item.participants.length > 0 && (
-                <div className="ev-cell ev-participants">
-                  <span className="ev-label">Участники</span>
-                  {item.participants.map((p) => (
-                    <div key={`${p.role}${p.id}`}>
-                      {p.role}: <PersonLink id={p.id}>{displayName(index.persons.get(p.id)!)}</PersonLink>
-                    </div>
-                  ))}
+              {/* Что именно (награда, профессия) — на месте участников: у таких событий их не бывает. */}
+              {(item.event.details || item.participants.length > 0) && (
+                <div className={item.event.place ? 'ev-cell ev-participants' : 'ev-cell ev-participants ev-wide'}>
+                  {item.event.details && <div className="ev-details">{item.event.details}</div>}
+                  {item.participants.length > 0 && (
+                    <>
+                      <span className="ev-label">Участники</span>
+                      {item.participants.map((p) => (
+                        <div key={`${p.role}${p.id}`}>
+                          {p.role}: <PersonLink id={p.id}>{displayName(index.persons.get(p.id)!)}</PersonLink>
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
               {item.event.place && (

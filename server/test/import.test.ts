@@ -120,6 +120,34 @@ describe('importGedcom', () => {
     );
   });
 
+  it('значение строки — «что именно»: профессия, учёба, награда; «Y» у рождения — нет', () => {
+    importGedcom(
+      db,
+      `0 HEAD
+0 @I1@ INDI
+1 NAME Пётр Ильич /Тестов/
+1 BIRT Y
+1 OCCU Кузнец
+1 EDUC Педагогический институт
+1 EVEN Орден Красной Звезды
+2 TYPE Военная награда
+2 DATE 1944
+1 EVEN Перепись населения
+0 TRLR
+`,
+    );
+    assert.deepEqual(
+      person('I1').events.map((e) => [e.type, e.customType, e.details]),
+      [
+        ['custom', 'Военная награда', 'Орден Красной Звезды'],
+        ['birth', '', ''],
+        ['occupation', '', 'Кузнец'],
+        ['education', '', 'Педагогический институт'],
+        ['custom', 'Перепись населения', ''],
+      ],
+    );
+  });
+
   it('убирает двойной развод, оставляет пустой развод как факт', () => {
     const report = importGedcom(db, GEDCOM);
     const family = getTree(db).families[0];

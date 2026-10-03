@@ -18,6 +18,7 @@ type EventRow = {
   id: number;
   type: string;
   custom_type: string;
+  details: string;
   date_modifier: string | null;
   date_value: string | null;
   date_value_to: string | null;
@@ -187,11 +188,12 @@ function mergeSingleEvents(db: Db, ownerColumn: 'person_id' | 'family_id', owner
       date_calendar: keptHasDate ? kept.date_calendar : event.date_calendar,
       date_text: keptHasDate ? kept.date_text : event.date_text,
       place_id: kept.place_id ?? event.place_id,
+      details: kept.details || event.details,
       note: [kept.note, event.note].filter(Boolean).join('\n'),
     };
     db.prepare(
       `UPDATE events SET date_modifier = ?, date_value = ?, date_value_to = ?, date_calendar = ?, date_text = ?, place_id = ?,
-         note = ? WHERE id = ?`,
+         details = ?, note = ? WHERE id = ?`,
     ).run(
       merged.date_modifier,
       merged.date_value,
@@ -199,6 +201,7 @@ function mergeSingleEvents(db: Db, ownerColumn: 'person_id' | 'family_id', owner
       merged.date_calendar,
       merged.date_text,
       merged.place_id,
+      merged.details,
       merged.note,
       kept.id,
     );
