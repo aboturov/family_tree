@@ -1,4 +1,5 @@
 import type { Db } from './db.ts';
+import { detachDocuments } from './documentLinks.ts';
 import type { DateModifier } from './gedcom.ts';
 import { audit, inTransaction } from './journal.ts';
 
@@ -13,11 +14,11 @@ export class EditError extends Error {
   }
 }
 
-const CONFLICT = 'Эту карточку только что изменил кто-то ещё. Обновите страницу и повторите правку.';
+export const CONFLICT = 'Эту карточку только что изменил кто-то ещё. Обновите страницу и повторите правку.';
 
 // --- Проверка входных данных ---
 
-const text = (value: unknown, field: string, max: number): string => {
+export const text = (value: unknown, field: string, max: number): string => {
   if (value === undefined || value === null) return '';
   if (typeof value !== 'string') throw new EditError(400, `Поле «${field}» должно быть строкой`);
   const trimmed = value.trim();
@@ -99,11 +100,30 @@ export function parseCalendar(value: unknown): Calendar {
   throw new EditError(400, 'Календарь: gregorian или julian');
 }
 
+/** Дата с точностью; `calendar: 'julian'` — по старому стилю. Так же датируются и документы. */
+export type DateFields = { modifier: DateModifier; value: string; valueTo: string | null; calendar: Calendar };
+
+export function parseDate(value: unknown): DateFields | null {
+  if (value === null || value === undefined) return null;
+  const d = value as Record<string, unknown>;
+  const modifier = d.modifier as DateModifier;
+  if (!MODIFIERS.includes(modifier)) throw new EditError(400, 'Неизвестная точность даты');
+  if (typeof d.value !== 'string' || !PARTIAL_DATE.test(d.value))
+    throw new EditError(400, 'Дата: ГГГГ, ГГГГ-ММ или ГГГГ-ММ-ДД');
+  let valueTo: string | null = null;
+  if (modifier === 'between') {
+    if (typeof d.valueTo !== 'string' || !PARTIAL_DATE.test(d.valueTo))
+      throw new EditError(400, 'Укажите вторую дату периода');
+    if (d.valueTo < d.value) throw new EditError(400, 'Вторая дата периода раньше первой');
+    valueTo = d.valueTo;
+  }
+  return { modifier, value: d.value, valueTo, calendar: parseCalendar(d.calendar) };
+}
+
 export type EventFields = {
   type: string;
   customType: string;
-  /** `calendar: 'julian'` — по старому стилю. */
-  date: { modifier: DateModifier; value: string; valueTo: string | null; calendar: Calendar } | null;
+  date: DateFields | null;
   /** Дата без года — только когда `date` пуста. */
   dateText: string;
   place: string;
@@ -117,22 +137,7 @@ export function parseEventFields(body: Record<string, unknown>, owner: 'person' 
   const customType = text(body.customType, 'Название события', 100);
   if (body.type === 'custom' && !customType) throw new EditError(400, 'Укажите название события');
 
-  let date: EventFields['date'] = null;
-  if (body.date !== null && body.date !== undefined) {
-    const d = body.date as Record<string, unknown>;
-    const modifier = d.modifier as DateModifier;
-    if (!MODIFIERS.includes(modifier)) throw new EditError(400, 'Неизвестная точность даты');
-    if (typeof d.value !== 'string' || !PARTIAL_DATE.test(d.value))
-      throw new EditError(400, 'Дата: ГГГГ, ГГГГ-ММ или ГГГГ-ММ-ДД');
-    let valueTo: string | null = null;
-    if (modifier === 'between') {
-      if (typeof d.valueTo !== 'string' || !PARTIAL_DATE.test(d.valueTo))
-        throw new EditError(400, 'Укажите вторую дату периода');
-      if (d.valueTo < d.value) throw new EditError(400, 'Вторая дата периода раньше первой');
-      valueTo = d.valueTo;
-    }
-    date = { modifier, value: d.value, valueTo, calendar: parseCalendar(d.calendar) };
-  }
+  const date = parseDate(body.date);
   const dateText = date ? '' : text(body.dateText, 'Дата', 20);
   if (dateText && !isYearlessDate(dateText)) throw new EditError(400, 'Дата без года: «12 марта» или «март»');
 
@@ -209,6 +214,7 @@ export function setDeceased(db: Db, userId: number, personId: number, deceased: 
     throw new EditError(400, 'У смерти указаны дата или место — чтобы снять отметку «Умер», удалите событие «Смерть»');
   }
   for (const death of deaths) {
+    detachDocuments(db, userId, { events: [death.id] });
     db.prepare('DELETE FROM events WHERE id = ?').run(death.id);
     audit(db, userId, 'event', death.id, 'delete', death, null);
   }
@@ -378,6 +384,7 @@ export function deleteEvent(db: Db, userId: number, eventId: number, expectedVer
   inTransaction(db, () => {
     const before = getEvent(db, eventId);
     bumpVersion(db, ownerOf(before), expected);
+    detachDocuments(db, userId, { events: [eventId] });
     db.prepare('DELETE FROM events WHERE id = ?').run(eventId);
     audit(db, userId, 'event', eventId, 'delete', before, null);
     if (before.family_id !== null) dropHollowFamily(db, userId, before.family_id);

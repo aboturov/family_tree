@@ -1,4 +1,5 @@
 import type { Db } from './db.ts';
+import { moveDocumentEvents, moveDocumentPersons } from './documentLinks.ts';
 
 type PersonRow = {
   id: number;
@@ -103,6 +104,7 @@ export function mergeInto(db: Db, keepId: number, dropId: number) {
       keepId,
     );
   }
+  moveDocumentPersons(db, dropId, keepId);
   // Аккаунт, привязанный к дублю, теперь указывает на оставшегося.
   db.prepare('UPDATE users SET person_id = ? WHERE person_id = ?').run(keepId, dropId);
 
@@ -201,6 +203,7 @@ function mergeSingleEvents(db: Db, ownerColumn: 'person_id' | 'family_id', owner
       kept.id,
     );
     Object.assign(kept, merged);
+    moveDocumentEvents(db, event.id, kept.id);
     db.prepare('DELETE FROM events WHERE id = ?').run(event.id);
   }
 }

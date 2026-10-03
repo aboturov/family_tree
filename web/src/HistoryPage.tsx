@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { api, ApiError, type HistoryItem, type PersonRef, type User } from './api.ts';
+import { documentName } from './documents/labels.ts';
 import { useEditing } from './editing/EditingContext.ts';
 import { Link, personPath } from './router.ts';
 import { eventLabel, type TreeEvent, type TreeIndex } from './tree/model.ts';
@@ -20,6 +21,15 @@ const LEGACY_ENTITIES: Record<string, string> = {
   event: 'событие',
   place: 'место',
   media: 'фото',
+};
+
+const DOCUMENT_ACTIONS: Record<string, string> = {
+  'document.add': 'добавлен документ',
+  'document.update': 'изменён документ',
+  'document.delete': 'удалён документ',
+  'document.file.add': 'добавлен скан документа',
+  'document.file.update': 'изменён номер кадра в документе',
+  'document.file.delete': 'удалён скан документа',
 };
 
 function Who({ person, index }: { person: PersonRef; index: TreeIndex }) {
@@ -129,6 +139,23 @@ export function describe(action: string, d: Record<string, unknown>, index: Tree
           <Who person={person} index={index} />: {d.mediaId === null ? 'убрана аватарка' : 'выбрана аватарка'}
         </>
       );
+    case 'document.add':
+    case 'document.update':
+    case 'document.delete':
+    case 'document.file.add':
+    case 'document.file.update':
+    case 'document.file.delete': {
+      // Документ может быть пока ни о ком: найден, но родство не подтверждено.
+      const people = d.people as PersonRef[];
+      const what = `${DOCUMENT_ACTIONS[action]} «${documentName(d.document as { type: string; title: string })}»`;
+      return people.length ? (
+        <>
+          <People people={people} index={index} />: {what}
+        </>
+      ) : (
+        <>{what[0].toUpperCase() + what.slice(1)}</>
+      );
+    }
     case 'undo':
       return <>Отменено — {describe(d.action as string, d.details as Record<string, unknown>, index)}</>;
     case 'legacy':

@@ -6,6 +6,7 @@ import { backup } from 'node:sqlite';
 import { parseArgs } from 'node:util';
 import { config } from './config.ts';
 import { openDb, type Db } from './db.ts';
+import { planDocumentImport, runDocumentImport } from './documentImport.ts';
 import { importGedcom } from './import.ts';
 import { findPersonId, mergePersons } from './merge.ts';
 import { generatePassword } from './passwords.ts';
@@ -35,6 +36,11 @@ const USAGE = `tree-admin <команда>
 
   import <file.ged> [--replace]      импортировать GEDCOM; --replace заменяет текущее дерево
   person:merge <keep> <drop>...      слить дубли в одного человека (id или ссылка из импорта, например I7)
+
+  documents:import <manifest.json> [--dry-run] [--user <login>]
+                                     загрузить документы со сканами по манифесту (формат — в
+                                     server/src/documentImport.ts); --dry-run только проверяет,
+                                     --user — от чьего имени правки в истории
 `;
 
 class CliError extends Error {}
@@ -47,6 +53,8 @@ async function main(argv: string[]) {
       role: { type: 'string', default: 'viewer' },
       keep: { type: 'string', default: '14' },
       replace: { type: 'boolean', default: false },
+      'dry-run': { type: 'boolean', default: false },
+      user: { type: 'string' },
       help: { type: 'boolean', short: 'h' },
     },
   });
@@ -58,13 +66,21 @@ async function main(argv: string[]) {
 
   const db = openDb(path.join(config.dataDir, 'tree.db'));
   try {
-    await run(db, command, args, { role: values.role!, keep: Number(values.keep), replace: values.replace! });
+    await run(db, command, args, {
+      role: values.role!,
+      keep: Number(values.keep),
+      replace: values.replace!,
+      dryRun: values['dry-run']!,
+      user: values.user,
+    });
   } finally {
     db.close();
   }
 }
 
-async function run(db: Db, command: string, args: string[], options: { role: string; keep: number; replace: boolean }) {
+type Options = { role: string; keep: number; replace: boolean; dryRun: boolean; user: string | undefined };
+
+async function run(db: Db, command: string, args: string[], options: Options) {
   switch (command) {
     case 'user:list': {
       const users = listUsers(db);
@@ -164,6 +180,30 @@ async function run(db: Db, command: string, args: string[], options: { role: str
         mergePersons(db, keepId, requirePersonId(db, dropRef));
         console.log(`${dropRef} слит в ${keepRef}`);
       }
+      return;
+    }
+    case 'documents:import': {
+      const file = requireArg(args[0], 'manifest.json');
+      if (!fs.existsSync(file)) throw new CliError(`Файл ${file} не найден`);
+      const userId = options.user === undefined ? null : requireUser(db, options.user).id;
+      const plan = planDocumentImport(db, file);
+      for (const doc of plan.documents) {
+        const { fields } = doc;
+        console.log(
+          `+ ${doc.uid}: ${fields.type}${fields.title ? ` «${fields.title}»` : ''}, сканов ${doc.files.length}, ` +
+            `людей ${fields.persons.length}, событий ${fields.events.length}`,
+        );
+      }
+      for (const uid of plan.skipped) console.log(`= ${uid}: уже загружен`);
+      for (const warning of plan.warnings) console.log(`! ${warning}`);
+      for (const error of plan.errors) console.log(`✗ ${error}`);
+      if (plan.errors.length) throw new CliError(`Ошибок: ${plan.errors.length}. Ничего не загружено.`);
+      if (options.dryRun) {
+        console.log(`\nПроверка: к загрузке ${plan.documents.length}, уже загружено ${plan.skipped.length}.`);
+        return;
+      }
+      const ids = runDocumentImport(db, config.mediaDir, plan, userId, (uid) => console.log(`  загружен ${uid}`));
+      console.log(`\nЗагружено документов: ${ids.length}, пропущено: ${plan.skipped.length}.`);
       return;
     }
     default:

@@ -20,6 +20,24 @@ import {
   updateEvent,
   updatePerson,
 } from './editing.ts';
+import {
+  addDocument,
+  addDocumentFile,
+  deleteDocument,
+  deleteDocumentFile,
+  documentChangeSubject,
+  documentFilePath,
+  documentOfFile,
+  listDocuments,
+  mainPerson,
+  parseDocumentFields,
+  parseFrame,
+  prepareScan,
+  sameScans,
+  trashDocumentFiles,
+  updateDocument,
+  updateDocumentFile,
+} from './documents.ts';
 import { addMedia, deleteMedia, mediaPath, parseCrop, setAvatar, trashMediaFiles, updateCaption } from './media.ts';
 import {
   addFirstPerson,
@@ -436,6 +454,93 @@ export function createApp({ db, mediaDir, secureCookies, sessionTtlDays, layouts
       person: who(personId),
       mediaId,
     }));
+    return c.json({ ok: true });
+  });
+
+  // --- Документы ---
+
+  const documentSubject = (documentId: number) => documentChangeSubject(db, documentId);
+
+  api.get('/documents', (c) => c.json({ documents: listDocuments(db) }));
+
+  api.post('/documents', editor, async (c) => {
+    const fields = parseDocumentFields(await readJson<Body>(c.req.raw));
+    const id = change(c, 'document.add', mainPerson(fields), () => addDocument(db, c.get('user')!.id, fields), (created) =>
+      documentSubject(created).details,
+    );
+    return c.json({ id }, 201);
+  });
+
+  api.patch('/documents/:id', editor, async (c) => {
+    const body = await readJson<Body>(c.req.raw);
+    const id = idParam(c.req.param('id'));
+    const fields = parseDocumentFields(body);
+    change(c, 'document.update', mainPerson(fields), () => updateDocument(db, c.get('user')!.id, id, body.version, fields), () =>
+      documentSubject(id).details,
+    );
+    return c.json({ ok: true });
+  });
+
+  api.delete('/documents/:id', editor, async (c) => {
+    const body = await readJson<Body>(c.req.raw);
+    const id = idParam(c.req.param('id'));
+    const subject = documentSubject(id);
+    const files = change(c, 'document.delete', subject.personId, () => deleteDocument(db, c.get('user')!.id, id, body.version), () =>
+      subject.details,
+    );
+    for (const fileId of files) trashDocumentFiles(mediaDir, fileId);
+    return c.json({ ok: true });
+  });
+
+  // Скан — оригинал (только без метаданных) и миниатюра, которую готовит браузер.
+  api.post('/documents/:id/files', editor, async (c) => {
+    const body = await c.req.parseBody();
+    if (!(body.file instanceof File) || !(body.thumb instanceof File)) throw new EditError(400, 'Нет файла скана');
+    const documentId = idParam(c.req.param('id'));
+    const subject = documentSubject(documentId);
+    const scan = prepareScan(new Uint8Array(await body.file.arrayBuffer()));
+    const thumb = new Uint8Array(await body.thumb.arrayBuffer());
+    const frame = parseFrame(body.frame);
+    const same = sameScans(db, scan.sha256);
+    const id = change(
+      c,
+      'document.file.add',
+      subject.personId,
+      () => addDocumentFile(db, mediaDir, c.get('user')!.id, documentId, { scan, thumb, frame }),
+      () => ({ ...subject.details, frame }),
+    );
+    return c.json({ id, sameScans: same }, 201);
+  });
+
+  api.get('/document-files/:id/:size', (c) => {
+    const size = c.req.param('size');
+    if (size !== 'original' && size !== 'thumb') return c.json({ error: 'Not found' }, 404);
+    const file = documentFilePath(mediaDir, idParam(c.req.param('id')), size);
+    if (!fs.existsSync(file)) return c.json({ error: 'Скан не найден' }, 404);
+    // Файл по id не меняется — кешируем надолго, но только в браузере вошедшего пользователя.
+    return new Response(Readable.toWeb(fs.createReadStream(file)) as ReadableStream, {
+      headers: { 'content-type': 'image/jpeg', 'cache-control': 'private, max-age=31536000, immutable' },
+    });
+  });
+
+  api.patch('/document-files/:id', editor, async (c) => {
+    const body = await readJson<Body>(c.req.raw);
+    const id = idParam(c.req.param('id'));
+    const subject = documentSubject(documentOfFile(db, id));
+    const frame = parseFrame(body.frame);
+    change(c, 'document.file.update', subject.personId, () => updateDocumentFile(db, c.get('user')!.id, id, frame), () => ({
+      ...subject.details,
+      frame,
+    }));
+    return c.json({ ok: true });
+  });
+
+  api.delete('/document-files/:id', editor, (c) => {
+    const id = idParam(c.req.param('id'));
+    const subject = documentSubject(documentOfFile(db, id));
+    change(c, 'document.file.delete', subject.personId, () => deleteDocumentFile(db, mediaDir, c.get('user')!.id, id), () =>
+      subject.details,
+    );
     return c.json({ ok: true });
   });
 

@@ -10,6 +10,8 @@ export type TreeEvent = {
   dateText: string;
   place: { name: string; lat: number | null; lon: number | null } | null;
   note: string;
+  /** Документы, которые подтверждают событие (только если есть). */
+  documents?: number[];
 };
 
 export type TreePhoto = { id: number; caption: string; width: number; height: number };
@@ -20,6 +22,8 @@ export type TreePerson = {
   /** Аватарка: одно из фото и кадрирование круга (см. media.ts). */
   avatar: { mediaId: number; crop: { x: number; y: number; zoom: number } } | null;
   photos: TreePhoto[];
+  /** Документы, где человек упомянут; сами документы — GET /api/documents. */
+  documents: number[];
   givenName: string;
   patronymic: string;
   surname: string;
@@ -61,6 +65,16 @@ type EventRow = {
 
 // Данных немного (сотни людей), поэтому дерево отдаётся целиком одним запросом.
 export function getTree(db: Db): Tree {
+  const documentsOf = (sql: string) => {
+    const map = new Map<number, number[]>();
+    for (const row of db.prepare(sql).all() as { owner: number; document_id: number }[]) {
+      map.set(row.owner, [...(map.get(row.owner) ?? []), row.document_id]);
+    }
+    return map;
+  };
+  const eventDocuments = documentsOf('SELECT event_id AS owner, document_id FROM document_events ORDER BY document_id');
+  const personDocuments = documentsOf('SELECT person_id AS owner, document_id FROM document_persons ORDER BY document_id');
+
   const eventRows = db
     .prepare(
       `SELECT e.*, p.name AS place_name, p.lat, p.lon
@@ -88,6 +102,7 @@ export function getTree(db: Db): Tree {
       dateText: row.date_text,
       place: row.place_name ? { name: row.place_name, lat: row.lat, lon: row.lon } : null,
       note: row.note,
+      ...(eventDocuments.has(row.id) ? { documents: eventDocuments.get(row.id) } : {}),
     };
     const [map, key] = row.person_id !== null ? [personEvents, row.person_id] : [familyEvents, row.family_id!];
     map.set(key, [...(map.get(key) ?? []), event]);
@@ -125,6 +140,7 @@ export function getTree(db: Db): Tree {
         ? { mediaId: row.avatar_media_id, crop: JSON.parse(row.avatar_crop) }
         : null,
     photos: photos.get(row.id) ?? [],
+    documents: personDocuments.get(row.id) ?? [],
     givenName: row.given_name,
     patronymic: row.patronymic,
     surname: row.surname,

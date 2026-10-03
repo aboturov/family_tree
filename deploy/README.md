@@ -175,6 +175,24 @@ sudo -u deploy docker compose exec app tree-admin person:merge I10 I11
 sudo rm /opt/family-tree/data/familio.ged
 ```
 
+## Загрузка документов пакетом
+
+Архивные документы собирают десятками — по одному через сайт это долго. Манифест (JSON, формат —
+в `server/src/documentImport.ts`) и сканы копируем в каталог данных, сначала проверяем, потом
+загружаем. Каждый документ становится отдельной правкой в истории, её можно откатить; повторный
+запуск пропускает уже загруженное.
+
+```bash
+scp -r archive <сервер>:/tmp/archive
+# на сервере:
+sudo cp -r /tmp/archive /opt/family-tree/data/archive && sudo chown -R 1000:1000 /opt/family-tree/data/archive
+cd /opt/family-tree
+sudo -u deploy docker compose exec app tree-admin documents:import /data/archive/manifest.json --dry-run
+sudo -u deploy docker compose exec app tree-admin documents:import /data/archive/manifest.json --user olga
+```
+
+После загрузки сканы лежат в `data/media/documents/`, а каталог `archive` можно удалить.
+
 ## Администрирование
 
 ```bash
@@ -199,9 +217,10 @@ docker compose logs -f app
 Копии складываются в `/opt/family-tree/data/backups/`, хранятся последние 14.
 Пока они лежат на том же диске; копию вовне стоит настроить отдельно.
 
-Фото в эти копии не входят: они лежат файлами в `/opt/family-tree/data/media/`
-(`<id>.jpg` и `<id>-thumb.jpg`) и только добавляются или удаляются, поэтому
-их достаточно синхронизировать, например `rsync -a data/media/ <куда-то>/media/`.
+Фото и сканы документов в эти копии не входят: они лежат файлами в `/opt/family-tree/data/media/`
+(фото — `<id>.jpg` и `<id>-thumb.jpg`, сканы — в `documents/`) и только добавляются или удаляются,
+поэтому их достаточно синхронизировать, например `rsync -a data/media/ <куда-то>/media/`. Сканы
+из архивов бывают платными — копию лучше держать не на том же диске.
 
 ## Откат
 

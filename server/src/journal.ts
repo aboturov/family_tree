@@ -3,7 +3,7 @@ import type { Db } from './db.ts';
 // Журнал правок. Правка (таблица changes) — одно действие пользователя; audit_log — что именно
 // изменилось внутри неё, с состоянием до и после. По этим строкам история откатывает правку.
 
-export type AuditEntity = 'person' | 'family' | 'event' | 'place' | 'media';
+export type AuditEntity = 'person' | 'family' | 'event' | 'place' | 'media' | 'document' | 'document_file';
 
 export type ChangeAction =
   | 'person.add'
@@ -19,6 +19,12 @@ export type ChangeAction =
   | 'media.update'
   | 'media.delete'
   | 'avatar.set'
+  | 'document.add'
+  | 'document.update'
+  | 'document.delete'
+  | 'document.file.add'
+  | 'document.file.update'
+  | 'document.file.delete'
   | 'undo';
 
 const depth = new WeakMap<Db, number>();
@@ -49,9 +55,10 @@ export function inTransaction<T>(db: Db, work: () => T): T {
   }
 }
 
+/** userId — null у правок из tree-admin (импорт документов). */
 export function audit(
   db: Db,
-  userId: number,
+  userId: number | null,
   entity: AuditEntity,
   entityId: number,
   action: 'create' | 'update' | 'delete',
@@ -77,7 +84,7 @@ export function audit(
  */
 export function recordChange<T>(
   db: Db,
-  userId: number,
+  userId: number | null,
   action: ChangeAction,
   personId: number | null,
   work: (changeId: number) => T,
