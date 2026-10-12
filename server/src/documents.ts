@@ -265,7 +265,7 @@ export function deleteDocument(db: Db, userId: number, id: number, expectedVersi
 
 // --- Файлы ---
 
-const MAX_FILE_BYTES = 24 * 1024 * 1024; // в nginx — 25 МБ на запрос вместе с миниатюрой
+const MAX_FILE_BYTES = 24 * 1024 * 1024; // в прокси — 25 МБ на запрос вместе с миниатюрой
 const MAX_THUMB_BYTES = 1024 * 1024;
 
 export type DocumentFileSize = 'original' | 'thumb';
