@@ -11,7 +11,7 @@ export const config = {
   mediaDir: path.join(dataDir, 'media'),
   // Собранный фронт; в dev его отдаёт Vite, поэтому каталога может не быть.
   staticDir: path.resolve(process.env.STATIC_DIR ?? '../web/dist'),
-  // За nginx с TLS cookie должна быть Secure; локально ходим по http.
+  // За прокси с TLS cookie должна быть Secure; локально ходим по http.
   secureCookies: isProduction,
   sessionTtlDays: 30,
   // Потоки раскладки дерева (layouts.ts): на сервере живут и другие службы — два ядра оставляем им.

@@ -2,13 +2,17 @@
 # Принимает образ через stdin (docker save из GitHub Actions), выкатывает его и
 # при неудаче откатывает на предыдущий. В ghcr сервер не ходит, токен ему не нужен.
 #
-# Из GitHub Actions вызывается только через forced command в authorized_keys:
-# SHA приходит в SSH_ORIGINAL_COMMAND, и ничего другого этим ключом сделать нельзя.
+# На сервере лежит как /usr/local/sbin/family-tree-deploy (root:root 0755) и запускается
+# от root: пользователь деплоя не входит в группу docker и может только `sudo` этот файл
+# без аргументов (deploy/family-tree-deploy.sudoers). Из GitHub Actions — только через
+# forced command в authorized_keys: SHA приходит в SSH_ORIGINAL_COMMAND (sudoers его
+# сохраняет), и ничего другого этим ключом сделать нельзя.
 # Вручную переключает на уже загруженную версию (откат), stdin не читает:
-#   /opt/family-tree/deploy.sh <sha>
+#   sudo /usr/local/sbin/family-tree-deploy <sha>
 set -eu
 
-cd "$(dirname "$0")"
+# Каталог фиксированный: скрипт лежит в /usr/local/sbin, рядом с ним ни .env, ни compose.
+cd /opt/family-tree
 
 tag="${SSH_ORIGINAL_COMMAND:-${1:-}}"
 case "$tag" in

@@ -1,0 +1,10 @@
+# /etc/sudoers.d/family-tree-deploy (root:root 0440).
+#
+# Ключ деплоя из GitHub Actions может вызвать только root-owned deploy-скрипт и только без
+# аргументов (forced command в authorized_keys). SHA приходит в SSH_ORIGINAL_COMMAND и строго
+# проверяется самим скриптом до обращения к Docker. В группу docker пользователь не входит.
+Defaults:family-tree-deploy env_keep += "SSH_ORIGINAL_COMMAND"
+# Образ приходит бинарным потоком через stdin, pseudo-TTY не должен его преобразовывать.
+# Forced command с restrict по-прежнему запрещают shell и PTY.
+Defaults:family-tree-deploy !use_pty
+family-tree-deploy ALL=(root) NOPASSWD: /usr/local/sbin/family-tree-deploy ""

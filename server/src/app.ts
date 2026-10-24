@@ -113,8 +113,8 @@ export function createApp({ db, mediaDir, secureCookies, sessionTtlDays, layouts
       return c.json({ error: 'Укажите логин и пароль' }, 400);
     }
 
-    // IP кладёт nginx (за Cloudflare — из CF-Connecting-IP, см. deploy/nginx); контейнер
-    // слушает только loopback, так что заголовку можно верить.
+    // IP кладёт обратный прокси (Caddy: `header_up X-Real-IP {remote_host}`, см. deploy/README.md);
+    // контейнер доступен только из сети прокси, так что заголовку можно верить.
     const address = c.req.header('x-real-ip') ?? 'local';
     const name = login.toLowerCase();
     if (limits.blocked(address, name)) {
